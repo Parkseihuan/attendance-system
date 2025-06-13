@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세미나 출석 체크</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        input[type="text"], input[type="email"], input[type="tel"], select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+        
+        .security-info {
+            background: #f8f9ff;
+            border: 2px solid #e3e8ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .security-info h3 {
+            color: #4c51bf;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .security-info p {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .location-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .location-status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .location-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .location-status.loading {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .time-info {
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 세미나 출석 체크</h1>
+            <p>정확한 정보를 입력해 주세요</p>
+        </div>
+        
+        <form id="attendanceForm">
+            <div class="form-group">
+                <label for="name">이름 <span class="required">*</span></label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="studentId">학번/교번 <span class="required">*</span></label>
+                <input type="text" id="studentId" name="studentId" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="department">소속 (학과/부서) <span class="required">*</span></label>
+                <input type="text" id="department" name="department" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" name="email">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">연락처</label>
+                <input type="tel" id="phone" name="phone">
+            </div>
+            
+            <div class="security-info">
+                <h3>🔒 보안 확인</h3>
+                <p>출석 확인을 위해 현재 위치와 시간이 기록됩니다.</p>
+                <div id="locationStatus" class="location-status loading">
+                    📍 위치 확인 중...
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmCode">확인 코드 <span class="required">*</span></label>
+                <input type="text" id="confirmCode" name="confirmCode" required placeholder="행사 중 발표된 코드를 입력하세요">
+                <small style="color: #6b7280; font-size: 12px;">※ 확인 코드는 행사장에서만 발표됩니다</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="eventQuestion">간단한 질문</label>
+                <select id="eventQuestion" name="eventQuestion" required>
+                    <option value="">선택해 주세요</option>
+                    <option value="morning">오늘 행사는 언제 시작되었나요? - 오전</option>
+                    <option value="afternoon">오늘 행사는 언제 시작되었나요? - 오후</option>
+                    <option value="evening">오늘 행사는 언제 시작되었나요? - 저녁</option>
+                </select>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="attendanceConfirm" name="attendanceConfirm" required>
+                <label for="attendanceConfirm">본 행사에 직접 참석함을 확인합니다 <span class="required">*</span></label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="dataConsent" name="dataConsent" required>
+                <label for="dataConsent">개인정보 수집 및 이용에 동의합니다 <span class="required">*</span></label>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                출석 체크 완료
+            </button>
+            
+            <div class="time-info">
+                <p id="currentTime"></p>
+                <p>제출 시간이 자동으로 기록됩니다</p>
+            </div>
+        </form>
+        
+        <div id="successMessage" class="success-message" style="display: none;">
+            ✅ 출석이 정상적으로 기록되었습니다!<br>
+            <small>확인 번호: <span id="confirmNumber"></span></small>
+        </div>
+    </div>
+
+    <script>
+        // 현재 시간 표시
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = `현재 시간: ${timeString}`;
+        }
+        
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // 위치 정보 확인
+        function checkLocation() {
+            const locationStatus = document.getElementById('locationStatus');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // 대학교 좌표 범위 확인 (예시: 서울대학교 좌표)
+                        // 실제 사용시 해당 대학의 좌표로 수정 필요
+                        const universityLat = 37.4601; // 예시 좌표
+                        const universityLng = 126.9538;
+                        const allowedRadius = 0.01; // 약 1km 반경
+                        
+                        const distance = Math.sqrt(
+                            Math.pow(lat - universityLat, 2) + 
+                            Math.pow(lng - universityLng, 2)
+                        );
+                        
+                        if (distance <= allowedRadius) {
+                            locationStatus.className = 'location-status success';
+                            locationStatus.innerHTML = '✅ 캠퍼스 내 위치 확인됨';
+                            enableSubmitButton();
+                        } else {
+                            locationStatus.className = 'location-status error';
+                            locationStatus.innerHTML = '❌ 캠퍼스 외부 위치입니다';
+                        }
+                    },
+                    function(error) {
+                        locationStatus.className = 'location-status error';
+                        locationStatus.innerHTML = '⚠️ 위치 정보를 가져올 수 없습니다';
+                        console.error('위치 정보 오류:', error);
+                    }
+                );
+            } else {
+                locationStatus.className = 'location-status error';
+                locationStatus.innerHTML = '❌ 브라우저가 위치 정보를 지원하지 않습니다';
+            }
+        }
+        
+        // 제출 버튼 활성화 조건 확인
+        function enableSubmitButton() {
+            const form = document.getElementById('attendanceForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const locationStatus = document.getElementById('locationStatus');
+            
+            // 필수 필드 확인
+            const requiredFields = form.querySelectorAll('[required]');
+            let allFilled = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    allFilled = false;
+                }
+            });
+            
+            // 위치 확인 성공 여부
+            const locationOk = locationStatus.className.includes('success');
+            
+            submitBtn.disabled = !(allFilled && locationOk);
+        }
+        
+        // 폼 필드 변경 감지
+        document.getElementById('attendanceForm').addEventListener('input', enableSubmitButton);
+        document.getElementById('attendanceForm').addEventListener('change', enableSubmitButton);
+        
+        // 폼 제출 처리
+        document.getElementById('attendanceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 현재 시간이 행사 시간 범위 내인지 확인
+            const now = new Date();
+            const currentHour = now.getHours();
+            
+            // 예시: 오전 9시 ~ 오후 6시만 허용
+            if (currentHour < 9 || currentHour > 18) {
+                alert('행사 시간 외에는 출석 체크를 할 수 없습니다.');
+                return;
+            }
+            
+            // 확인 코드 검증 (예시)
+            const confirmCode = document.getElementById('confirmCode').value;
+            const validCodes = ['SEMINAR2024', 'ATTEND123', 'PRESENT']; // 실제로는 서버에서 확인
+            
+            if (!validCodes.includes(confirmCode.toUpperCase())) {
+                alert('잘못된 확인 코드입니다. 행사장에서 발표된 코드를 정확히 입력해 주세요.');
+                return;
+            }
+            
+            // 성공 처리
+            const form = document.getElementById('attendanceForm');
+            const successMessage = document.getElementById('successMessage');
+            const confirmNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
+            
+            document.getElementById('confirmNumber').textContent = confirmNumber;
+            
+            form.style.display = 'none';
+            successMessage.style.display = 'block';
+            
+            // 실제 구현시에는 여기서 서버로 데이터 전송
+            console.log('출석 데이터:', new FormData(form));
+        });
+        
+        // 페이지 로드 시 위치 확인
+        window.addEventListener('load', function() {
+            setTimeout(checkLocation, 1000);
+        });
+        
+        // 페이지 새로고침 방지
+        window.addEventListener('beforeunload', function(e) {
+            if (document.getElementById('attendanceForm').style.display !== 'none') {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    </script>
+</body>
+</html>
