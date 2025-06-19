@@ -957,20 +957,22 @@
                 }
             }
 
-            // JSONP 방식으로 Google Apps Script 호출
             async submitViaJSONP(data) {
                 return new Promise((resolve, reject) => {
                     const callbackName = 'jsonpCallback' + Date.now() + Math.floor(Math.random() * 1000);
                     
+                    console.log('JSONP 요청 시작:', callbackName);
+                    
                     // 전역 콜백 함수 등록
                     window[callbackName] = function(response) {
+                        console.log('JSONP 콜백 실행됨:', response);
                         cleanup();
-                        console.log('JSONP 응답:', response);
                         resolve(response);
                     };
 
                     // 에러 처리를 위한 타임아웃
                     const timeoutId = setTimeout(() => {
+                        console.warn('JSONP 타임아웃 발생');
                         cleanup();
                         reject(new Error('JSONP 요청 타임아웃 (15초)'));
                     }, 15000);
@@ -991,16 +993,24 @@
                     const params = new URLSearchParams();
                     params.append('callback', callbackName);
                     params.append('data', JSON.stringify(data));
+                    
+                    const fullUrl = `${CONFIG.GOOGLE_SCRIPT_URL}?${params.toString()}`;
+                    console.log('JSONP 요청 URL:', fullUrl);
 
                     // 스크립트 태그 생성
                     const script = document.createElement('script');
-                    script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?${params.toString()}`;
-                    script.onerror = function() {
+                    script.src = fullUrl;
+                    script.onload = function() {
+                        console.log('JSONP 스크립트 로드 성공');
+                    };
+                    script.onerror = function(event) {
+                        console.error('JSONP 스크립트 로드 실패:', event);
                         cleanup();
                         reject(new Error('JSONP 스크립트 로드 실패'));
                     };
 
                     // DOM에 스크립트 추가
+                    console.log('JSONP 스크립트 DOM에 추가');
                     document.head.appendChild(script);
                 });
             }
