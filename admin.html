@@ -1285,7 +1285,7 @@
                 }
             }
 
-            async updateGPSSettingsOnServer(radius) {
+            async             updateGPSSettingsOnServer(radius) {
                 try {
                     const callbackName = 'gpsCallback' + Date.now() + Math.floor(Math.random() * 1000);
                     
@@ -1329,6 +1329,30 @@
                 } catch (error) {
                     console.warn('GPS 설정 서버 업데이트 오류:', error);
                 }
+            }
+
+            showModal(type, title, message) {
+                const modal = document.getElementById('modal');
+                const modalIcon = document.getElementById('modalIcon');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalMessage = document.getElementById('modalMessage');
+
+                modalIcon.className = 'modal-icon ' + type;
+                switch(type) {
+                    case 'success': modalIcon.textContent = '✅'; break;
+                    case 'error': modalIcon.textContent = '❌'; break;
+                    case 'warning': modalIcon.textContent = '⚠️'; break;
+                    default: modalIcon.textContent = 'ℹ️';
+                }
+
+                modalTitle.textContent = title;
+                modalMessage.innerHTML = message;
+                
+                modal.classList.add('active');
+            }
+
+            closeModal() {
+                document.getElementById('modal').classList.remove('active');
             }
         }
 
