@@ -1,1157 +1,1457 @@
-// Google Apps Script 코드 - 출석 체크 시스템 (완전 통합 버전)
-
-// 스프레드시트 ID (Google Sheets URL에서 확인 가능)
-const SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
-
-// 시트 이름
-const SHEET_NAME = '출석체크';
-
-function doPost(e) {
-  console.log('doPost 호출됨');
-  console.log('요청 데이터:', e);
-  
-  try {
-    let data;
-    
-    // POST 요청 데이터 파싱
-    if (e.postData && e.postData.contents) {
-      console.log('POST 데이터 원본:', e.postData.contents);
-      data = JSON.parse(e.postData.contents);
-      console.log('파싱된 데이터:', data);
-    } else {
-      throw new Error('POST 데이터가 없습니다.');
-    }
-    
-    // 관리자 기능 처리
-    if (data.action) {
-      return handleAdminActionPost(data);
-    }
-    
-    // 향상된 저장 함수 사용
-    console.log('향상된 스프레드시트 저장 시작...');
-    const result = saveToSpreadsheetEnhanced(data);
-    console.log('저장 결과:', result);
-    
-    // JSON 응답 반환
-    const response = {
-      success: true,
-      message: '출석체크가 완료되었습니다.',
-      data: result,
-      method: 'POST',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('응답 데이터:', response);
-    
-    return ContentService
-      .createTextOutput(JSON.stringify(response))
-      .setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (error) {
-    console.error('doPost 오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    const errorResponse = {
-      success: false,
-      message: error.toString(),
-      error: error.toString(),
-      method: 'POST',
-      timestamp: new Date().toISOString()
-    };
-    
-    return ContentService
-      .createTextOutput(JSON.stringify(errorResponse))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  console.log('doGet 호출됨');
-  console.log('GET 파라미터:', e.parameter);
-  
-  try {
-    // 관리자 기능 처리
-    if (e.parameter.action) {
-      return handleAdminAction(e.parameter);
-    }
-    
-    // JSONP 콜백 함수명 확인
-    const callback = e.parameter.callback;
-    
-    if (callback && e.parameter.data) {
-      console.log('JSONP 요청 처리 중...');
-      console.log('콜백:', callback);
-      console.log('데이터 원본:', e.parameter.data);
-      
-      // JSONP 요청 처리
-      const data = JSON.parse(e.parameter.data);
-      console.log('JSONP 파싱된 데이터:', data);
-      
-      // 향상된 저장 함수 사용
-      const result = saveToSpreadsheetEnhanced(data);
-      console.log('JSONP 저장 결과:', result);
-      
-      // JSONP 응답 생성
-      const responseData = {
-        success: true,
-        message: '출석체크가 완료되었습니다.',
-        data: result,
-        method: 'JSONP'
-      };
-      
-      const jsonpResponse = `${callback}(${JSON.stringify(responseData)});`;
-      console.log('JSONP 응답:', jsonpResponse);
-      
-      return ContentService
-        .createTextOutput(jsonpResponse)
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-        
-    } else {
-      console.log('일반 GET 요청 - 상태 확인');
-      // 일반 GET 요청 - 상태 확인용
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          success: true,
-          message: '출석체크 시스템이 정상 작동 중입니다.',
-          timestamp: new Date().toISOString(),
-          spreadsheetId: SPREADSHEET_ID ? '설정됨' : '미설정',
-          method: 'GET'
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-  } catch (error) {
-    console.error('doGet 오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    if (e.parameter && e.parameter.callback) {
-      // JSONP 에러 응답
-      const errorResponse = `${e.parameter.callback}(${JSON.stringify({
-        success: false,
-        message: error.toString(),
-        error: error.toString(),
-        method: 'JSONP_ERROR'
-      })});`;
-      
-      return ContentService
-        .createTextOutput(errorResponse)
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    }
-    
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.toString(),
-        error: error.toString(),
-        method: 'GET_ERROR'
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// 향상된 저장 함수 (여러 방법으로 시도)
-function saveToSpreadsheetEnhanced(data) {
-  console.log('=== 향상된 저장 함수 시작 ===');
-  console.log('받은 데이터:', JSON.stringify(data, null, 2));
-  
-  try {
-    // 1단계: 기본 스프레드시트 ID 확인
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      console.warn('기본 스프레드시트 ID 미설정, 백업 방식으로 전환');
-      return saveToBackupSpreadsheet(data);
-    }
-    
-    console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
-    
-    // 2단계: 스프레드시트 접근 시도
-    let spreadsheet;
-    try {
-      spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-      console.log('기본 스프레드시트 열기 성공:', spreadsheet.getName());
-    } catch (openError) {
-      console.error('기본 스프레드시트 열기 실패:', openError);
-      console.log('백업 방식으로 전환...');
-      return saveToBackupSpreadsheet(data);
-    }
-    
-    // 3단계: 시트 확인 및 생성
-    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    if (!sheet) {
-      console.log('시트가 없음, 새로 생성...');
-      sheet = spreadsheet.insertSheet(SHEET_NAME);
-      
-      // 헤더 설정
-      const headers = [
-        '제출일시(KST)', '제출일시(ISO)', '이름', '소속', '이메일', '연락처', 
-        '위치', '좌표', '기기ID', '브라우저정보', '제출시도', '전송방식'
-      ];
-      
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-      
-      // 헤더 스타일
-      const headerRange = sheet.getRange(1, 1, 1, headers.length);
-      headerRange.setBackground('#4285f4');
-      headerRange.setFontColor('white');
-      headerRange.setFontWeight('bold');
-      headerRange.setHorizontalAlignment('center');
-      
-      SpreadsheetApp.flush();
-      console.log('헤더 설정 완료');
-    }
-    
-    // 4단계: 현재 상태 확인
-    const beforeLastRow = sheet.getLastRow();
-    console.log('저장 전 마지막 행:', beforeLastRow);
-    
-    // 5단계: 데이터 준비
-    const now = new Date();
-    const kstTime = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
-    
-    const row = [
-      data.timestampKor || kstTime,
-      data.timestamp || now.toISOString(),
-      data.name || '',
-      data.affiliation || '',
-      data.email || '',
-      data.phone || '',
-      data.location || '',
-      data.coordinates || '',
-      data.deviceId || '',
-      data.userAgent || '',
-      data.submissionAttempt || 1,
-      data.method || 'Enhanced'
-    ];
-    
-    console.log('저장할 행 데이터:', row);
-    
-    // 6단계: 여러 방법으로 데이터 저장 시도
-    try {
-      // 방법 1: appendRow 사용
-      sheet.appendRow(row);
-      console.log('appendRow 완료');
-    } catch (appendError) {
-      console.warn('appendRow 실패, insertRowAfter 시도:', appendError);
-      
-      // 방법 2: insertRowAfter 사용
-      const targetRow = beforeLastRow + 1;
-      sheet.insertRowAfter(beforeLastRow);
-      sheet.getRange(targetRow, 1, 1, row.length).setValues([row]);
-      console.log('insertRowAfter 완료');
-    }
-    
-    // 7단계: 강제 저장 및 새로고침
-    SpreadsheetApp.flush();
-    console.log('첫 번째 flush 완료');
-    
-    Utilities.sleep(500); // 0.5초 대기
-    
-    // 추가 강제 저장
-    sheet.getRange('A1').setValue(sheet.getRange('A1').getValue());
-    SpreadsheetApp.flush();
-    console.log('두 번째 flush 완료');
-    
-    // 8단계: 저장 결과 확인
-    const afterLastRow = sheet.getLastRow();
-    console.log('저장 후 마지막 행:', afterLastRow);
-    
-    if (afterLastRow <= beforeLastRow) {
-      throw new Error(`데이터가 저장되지 않음. 저장 전: ${beforeLastRow}, 저장 후: ${afterLastRow}`);
-    }
-    
-    // 9단계: 저장된 데이터 검증
-    const savedData = sheet.getRange(afterLastRow, 1, 1, row.length).getValues()[0];
-    console.log('저장된 데이터 검증:', savedData);
-    
-    // 10단계: 중복 체크
-    let duplicateCount = 1;
-    if (afterLastRow > 1) {
-      const deviceIds = sheet.getRange(2, 9, afterLastRow - 1, 1).getValues();
-      const duplicates = deviceIds.filter(id => id[0] === data.deviceId);
-      duplicateCount = duplicates.length;
-      
-      if (duplicateCount > 1) {
-        console.log(`중복 출석 감지: ${data.deviceId}, 총 ${duplicateCount}회`);
-      }
-    }
-    
-    const result = {
-      success: true,
-      rowNumber: afterLastRow,
-      timestamp: now.toISOString(),
-      kstTimestamp: kstTime,
-      deviceId: data.deviceId,
-      duplicateCount: duplicateCount,
-      spreadsheetName: spreadsheet.getName(),
-      spreadsheetUrl: spreadsheet.getUrl(),
-      sheetName: sheet.getName(),
-      savedData: savedData
-    };
-    
-    console.log('=== 저장 성공 ===');
-    console.log('최종 결과:', result);
-    
-    return result;
-    
-  } catch (error) {
-    console.error('=== 향상된 저장 실패 ===');
-    console.error('오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    // 백업 저장 시도
-    console.log('백업 저장 시도...');
-    try {
-      const backupResult = saveToBackupSpreadsheet(data);
-      console.log('백업 저장 성공:', backupResult);
-      return backupResult;
-    } catch (backupError) {
-      console.error('백업 저장도 실패:', backupError);
-      throw new Error(`기본 저장 실패: ${error.message}, 백업 저장도 실패: ${backupError.message}`);
-    }
-  }
-}
-
-// 다른 스프레드시트에 백업 저장 함수
-function saveToBackupSpreadsheet(data) {
-  try {
-    console.log('=== 백업 스프레드시트에 저장 시작 ===');
-    
-    // 새 스프레드시트 생성 (임시 백업용)
-    const backupName = '출석체크_백업_' + Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyyMMdd_HHmmss');
-    const backupSpreadsheet = SpreadsheetApp.create(backupName);
-    const backupSheet = backupSpreadsheet.getActiveSheet();
-    backupSheet.setName('출석데이터');
-    
-    console.log('백업 스프레드시트 생성:', backupSpreadsheet.getUrl());
-    
-    // 헤더 설정
-    const headers = [
-      '제출일시(KST)', '제출일시(ISO)', '이름', '소속', '이메일', '연락처', 
-      '위치', '좌표', '기기ID', '브라우저정보', '제출시도', '전송방식'
-    ];
-    
-    backupSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    
-    // 현재 시간
-    const now = new Date();
-    const kstTime = Utilities.formatDate(now, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
-    
-    // 데이터 행 추가
-    const row = [
-      data.timestampKor || kstTime,
-      data.timestamp || now.toISOString(),
-      data.name || '',
-      data.affiliation || '',
-      data.email || '',
-      data.phone || '',
-      data.location || '',
-      data.coordinates || '',
-      data.deviceId || '',
-      data.userAgent || '',
-      data.submissionAttempt || 1,
-      'BACKUP_SAVE'
-    ];
-    
-    backupSheet.appendRow(row);
-    SpreadsheetApp.flush();
-    
-    console.log('백업 저장 완료');
-    console.log('백업 URL:', backupSpreadsheet.getUrl());
-    
-    return {
-      success: true,
-      backupUrl: backupSpreadsheet.getUrl(),
-      backupId: backupSpreadsheet.getId(),
-      rowData: row,
-      message: '백업 스프레드시트에 저장됨'
-    };
-    
-  } catch (error) {
-    console.error('백업 저장 오류:', error);
-    throw error;
-  }
-}
-
-// 스프레드시트 강제 새로고침 및 동기화 함수
-function forceRefreshSpreadsheet() {
-  try {
-    console.log('=== 강제 새로고침 시작 ===');
-    
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      throw new Error('SPREADSHEET_ID를 먼저 설정해주세요!');
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    console.log('스프레드시트 열기:', spreadsheet.getName());
-    
-    // 모든 시트 새로고침
-    const sheets = spreadsheet.getSheets();
-    console.log('전체 시트 수:', sheets.length);
-    
-    sheets.forEach(sheet => {
-      console.log(`시트 "${sheet.getName()}" 새로고침 중...`);
-      // 강제 계산 새로고침
-      sheet.getRange("A1").setValue(sheet.getRange("A1").getValue());
-    });
-    
-    // 스프레드시트 강제 저장
-    SpreadsheetApp.flush();
-    console.log('스프레드시트 플러시 완료');
-    
-    // 잠시 대기 후 다시 확인
-    Utilities.sleep(1000);
-    
-    const targetSheet = spreadsheet.getSheetByName(SHEET_NAME);
-    if (targetSheet) {
-      const lastRow = targetSheet.getLastRow();
-      const lastCol = targetSheet.getLastColumn();
-      console.log(`대상 시트 "${SHEET_NAME}" 상태:`, {
-        lastRow: lastRow,
-        lastColumn: lastCol,
-        hasData: lastRow > 0
-      });
-      
-      if (lastRow > 0) {
-        const recentData = targetSheet.getRange(Math.max(1, lastRow - 2), 1, Math.min(3, lastRow), lastCol).getValues();
-        console.log('최근 데이터 (최대 3행):', recentData);
-      }
-    }
-    
-    return {
-      success: true,
-      message: '새로고침 완료',
-      spreadsheetUrl: spreadsheet.getUrl(),
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('새로고침 오류:', error);
-    throw error;
-  }
-}
-
-// 스프레드시트 상태 확인 함수
-function checkSpreadsheetStatus() {
-  console.log('=== 스프레드시트 상태 확인 ===');
-  console.log('SPREADSHEET_ID:', SPREADSHEET_ID);
-  
-  try {
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      console.error('SPREADSHEET_ID가 설정되지 않았습니다!');
-      return { error: 'SPREADSHEET_ID 미설정' };
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    console.log('스프레드시트 이름:', spreadsheet.getName());
-    console.log('스프레드시트 URL:', spreadsheet.getUrl());
-    
-    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    if (sheet) {
-      console.log('시트 존재함:', SHEET_NAME);
-      console.log('마지막 행:', sheet.getLastRow());
-      console.log('마지막 열:', sheet.getLastColumn());
-      
-      if (sheet.getLastRow() > 0) {
-        const data = sheet.getRange(1, 1, Math.min(sheet.getLastRow(), 5), sheet.getLastColumn()).getValues();
-        console.log('시트 데이터 (최대 5행):', data);
-      }
-    } else {
-      console.log('시트 없음:', SHEET_NAME);
-    }
-    
-    return {
-      success: true,
-      spreadsheetName: spreadsheet.getName(),
-      spreadsheetUrl: spreadsheet.getUrl(),
-      sheetExists: !!sheet,
-      lastRow: sheet ? sheet.getLastRow() : 0
-    };
-    
-  } catch (error) {
-    console.error('상태 확인 오류:', error);
-    return { error: error.toString() };
-  }
-}
-
-// 스프레드시트 초기화 함수
-function initializeSpreadsheet() {
-  console.log('=== 스프레드시트 초기화 시작 ===');
-  
-  try {
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      throw new Error('SPREADSHEET_ID를 먼저 설정해주세요!');
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    console.log('스프레드시트 열기 성공:', spreadsheet.getName());
-    
-    let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    
-    if (sheet) {
-      console.log('기존 시트 발견, 초기화 중...');
-      sheet.clear();
-    } else {
-      console.log('새 시트 생성 중...');
-      sheet = spreadsheet.insertSheet(SHEET_NAME);
-    }
-    
-    // 헤더 설정
-    const headers = [
-      '제출일시(KST)', '제출일시(ISO)', '이름', '소속', '이메일', '연락처', 
-      '위치', '좌표', '기기ID', '브라우저정보', '제출시도', '전송방식'
-    ];
-    
-    console.log('헤더 설정 중...');
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-    
-    // 헤더 스타일
-    const headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setBackground('#4285f4');
-    headerRange.setFontColor('white');
-    headerRange.setFontWeight('bold');
-    headerRange.setHorizontalAlignment('center');
-    
-    // 열 너비 자동 조정
-    sheet.autoResizeColumns(1, headers.length);
-    
-    // 강제 저장
-    SpreadsheetApp.flush();
-    
-    console.log('=== 스프레드시트 초기화 완료 ===');
-    return { 
-      success: true, 
-      message: '초기화 완료',
-      spreadsheetName: spreadsheet.getName(),
-      spreadsheetUrl: spreadsheet.getUrl()
-    };
-    
-  } catch (error) {
-    console.error('=== 스프레드시트 초기화 오류 ===');
-    console.error('오류:', error);
-    throw error;
-  }
-}
-
-// 향상된 테스트 함수
-function testSaveDataEnhanced() {
-  console.log('=== 향상된 테스트 시작 ===');
-  
-  const testData = {
-    name: '향상된테스트_' + Date.now(),
-    affiliation: '테스트기관',
-    email: 'test@example.com',
-    phone: '010-1234-5678',
-    location: '테스트위치',
-    coordinates: '37.5665,126.9780',
-    deviceId: 'enhanced_test_' + Date.now(),
-    timestamp: new Date().toISOString(),
-    timestampKor: new Date().toLocaleString('ko-KR'),
-    userAgent: 'Enhanced Test Browser',
-    submissionAttempt: 1,
-    method: 'ENHANCED_TEST'
-  };
-  
-  console.log('테스트 데이터:', testData);
-  
-  try {
-    const result = saveToSpreadsheetEnhanced(testData);
-    console.log('=== 향상된 테스트 성공 ===');
-    console.log('결과:', result);
-    return result;
-  } catch (error) {
-    console.error('=== 향상된 테스트 실패 ===');
-    console.error('오류:', error);
-    throw error;
-  }
-}
-
-// 강제 새로고침 후 테스트
-function refreshAndTest() {
-  console.log('=== 새로고침 후 테스트 시작 ===');
-  
-  try {
-    // 1단계: 강제 새로고침
-    console.log('1단계: 강제 새로고침...');
-    const refreshResult = forceRefreshSpreadsheet();
-    console.log('새로고침 결과:', refreshResult);
-    
-    // 2단계: 잠시 대기
-    console.log('2단계: 대기 중 (2초)...');
-    Utilities.sleep(2000);
-    
-    // 3단계: 향상된 테스트 실행
-    console.log('3단계: 향상된 테스트 실행...');
-    const testResult = testSaveDataEnhanced();
-    console.log('테스트 결과:', testResult);
-    
-    // 4단계: 다시 새로고침하여 확인
-    console.log('4단계: 결과 확인을 위한 새로고침...');
-    Utilities.sleep(1000);
-    const finalRefresh = forceRefreshSpreadsheet();
-    console.log('최종 새로고침 결과:', finalRefresh);
-    
-    return {
-      success: true,
-      refreshResult: refreshResult,
-      testResult: testResult,
-      finalRefresh: finalRefresh
-    };
-    
-  } catch (error) {
-    console.error('=== 새로고침 후 테스트 실패 ===');
-    console.error('오류:', error);
-    throw error;
-  }
-}
-
-// 완전 초기화 후 테스트
-function fullResetAndTest() {
-  console.log('=== 완전 초기화 후 테스트 시작 ===');
-  
-  try {
-    // 1단계: 스프레드시트 완전 초기화
-    console.log('1단계: 완전 초기화...');
-    const initResult = initializeSpreadsheet();
-    console.log('초기화 결과:', initResult);
-    
-    // 2단계: 강제 저장 및 대기
-    console.log('2단계: 강제 저장 및 대기...');
-    SpreadsheetApp.flush();
-    Utilities.sleep(3000);
-    
-    // 3단계: 상태 확인
-    console.log('3단계: 상태 확인...');
-    const statusResult = checkSpreadsheetStatus();
-    console.log('상태 확인 결과:', statusResult);
-    
-    // 4단계: 테스트 데이터 저장
-    console.log('4단계: 테스트 데이터 저장...');
-    const testResult = testSaveDataEnhanced();
-    console.log('테스트 저장 결과:', testResult);
-    
-    // 5단계: 최종 확인
-    console.log('5단계: 최종 확인...');
-    Utilities.sleep(2000);
-    const finalStatus = checkSpreadsheetStatus();
-    console.log('최종 상태:', finalStatus);
-    
-    return {
-      success: true,
-      initResult: initResult,
-      statusResult: statusResult,
-      testResult: testResult,
-      finalStatus: finalStatus
-    };
-    
-  } catch (error) {
-    console.error('=== 완전 초기화 후 테스트 실패 ===');
-    console.error('오류:', error);
-    throw error;
-  }
-}
-
-// 백업 테스트 함수
-function testBackupSave() {
-  console.log('=== 백업 저장 테스트 시작 ===');
-  
-  const testData = {
-    name: '백업테스트_' + Date.now(),
-    affiliation: '백업테스트기관',
-    email: 'backup@test.com',
-    phone: '010-9999-9999',
-    location: '백업테스트위치',
-    coordinates: '37.5665,126.9780',
-    deviceId: 'backup_test_' + Date.now(),
-    timestamp: new Date().toISOString(),
-    timestampKor: new Date().toLocaleString('ko-KR'),
-    userAgent: 'Backup Test Browser',
-    submissionAttempt: 1,
-    method: 'BACKUP_TEST'
-  };
-  
-  try {
-    const result = saveToBackupSpreadsheet(testData);
-    console.log('=== 백업 저장 테스트 성공 ===');
-    console.log('백업 결과:', result);
-    console.log('백업 스프레드시트 URL:', result.backupUrl);
-    return result;
-  } catch (error) {
-    console.error('=== 백업 저장 테스트 실패 ===');
-    console.error('오류:', error);
-    throw error;
-  }
-}
-
-// 관리자 기능 처리 (GET 요청) - 강화된 버전
-function handleAdminAction(params) {
-  console.log('=== 관리자 GET 액션 처리 ===');
-  console.log('액션:', params.action);
-  console.log('모든 파라미터:', params);
-  
-  try {
-    let result;
-    
-    switch (params.action) {
-      case 'getStats':
-        console.log('통계 조회 요청');
-        result = getAttendanceStats();
-        break;
-        
-      case 'getSettings':
-        console.log('설정 조회 요청');
-        result = getSystemSettings();
-        break;
-        
-      case 'exportData':
-        console.log('데이터 내보내기 요청');
-        result = exportAttendanceData();
-        break;
-        
-      case 'clearAllData':
-        console.log('모든 데이터 삭제 요청 (GET)');
-        // 보안 확인
-        if (!params.adminPassword || params.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>출석 체크 관리자 페이지</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+            min-height: 100vh;
         }
-        result = clearAllAttendanceData();
-        break;
-        
-      case 'updateSettings':
-        console.log('설정 업데이트 요청 (GET)');
-        if (!params.adminPassword || params.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
+
+        .admin-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            max-width: 1000px;
+            overflow: hidden;
         }
-        // GET 방식으로 전달된 설정 파라미터 처리
-        const settings = {
-          eventTitle: params.eventTitle,
-          eventDescription: params.eventDescription,
-          manualInstruction: params.manualInstruction
+
+        .admin-header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .admin-content {
+            padding: 30px;
+        }
+
+        .section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .section h3 {
+            color: #1e293b;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .location-item {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .location-item.active {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 5px;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .modal-icon.success { color: #10b981; }
+        .modal-icon.error { color: #ef4444; }
+        .modal-icon.warning { color: #f59e0b; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online { background: #10b981; }
+        .status-offline { background: #ef4444; }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #3b82f6;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        @media (max-width: 768px) {
+            .admin-content {
+                padding: 20px;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div id="loginScreen">
+        <div class="login-form">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
+                <p class="text-gray-600">출석 체크 시스템 관리</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="adminPassword">관리자 비밀번호</label>
+                    <input type="password" id="adminPassword" placeholder="비밀번호를 입력하세요" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-full">로그인</button>
+            </form>
+            
+            <div class="text-center mt-6 text-sm text-gray-500">
+                <p>기본 비밀번호: <code>admin123</code></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 관리자 페이지 -->
+    <div id="adminPanel" style="display: none;">
+        <div class="admin-container">
+            <!-- 헤더 -->
+            <div class="admin-header">
+                <h1 class="text-3xl font-bold mb-2">🎓 출석 체크 관리자 페이지</h1>
+                <p class="text-lg opacity-90">시스템 설정 및 통계 관리</p>
+                <div class="mt-4">
+                    <span class="status-indicator status-online"></span>
+                    <span class="text-sm">시스템 활성화됨</span>
+                    <button class="btn btn-danger ml-4" onclick="logout()">로그아웃</button>
+                </div>
+            </div>
+
+            <div class="admin-content">
+                <!-- 통계 -->
+                <div class="section">
+                    <h3>📊 실시간 통계</h3>
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalAttendees">-</div>
+                            <div class="stat-label">총 참석자</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="uniqueDevices">-</div>
+                            <div class="stat-label">고유 기기</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="duplicateCount">-</div>
+                            <div class="stat-label">중복 시도</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="lastUpdate">-</div>
+                            <div class="stat-label">마지막 업데이트</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="refreshStats()">📈 통계 새로고침</button>
+                </div>
+
+                <!-- 행사 설정 -->
+                <div class="section">
+                    <h3>🎪 행사 설정</h3>
+                    <div class="form-group">
+                        <label for="eventTitle">행사 제목</label>
+                        <input type="text" id="eventTitle" placeholder="예: 2024 겨울 세미나">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventDescription">행사 설명</label>
+                        <input type="text" id="eventDescription" placeholder="예: 행사 참석 확인을 위해 정보를 입력해 주세요">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="manualInstruction">수동 참석 안내 문구</label>
+                        <textarea id="manualInstruction" rows="3" placeholder="휴대폰 사용이 어려우신 경우 안내 문구"></textarea>
+                    </div>
+                    
+                    <button class="btn btn-success" onclick="saveEventSettings()">💾 행사 설정 저장</button>
+                </div>
+
+                <!-- 위치 설정 -->
+                <div class="section">
+                    <h3>📍 허용 위치 설정</h3>
+                    <p class="text-gray-600 mb-4">출석 체크가 가능한 장소를 최대 3곳까지 설정할 수 있습니다.</p>
+                    
+                    <div id="locationsContainer">
+                        <!-- 위치 항목들이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary mr-2" onclick="getCurrentLocation()">📍 현재 위치 가져오기</button>
+                        <button class="btn btn-success" onclick="saveLocations()">💾 위치 설정 저장</button>
+                    </div>
+                </div>
+
+                <!-- 시스템 관리 -->
+                <div class="section">
+                    <h3>⚙️ 시스템 관리</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-4 rounded-lg border">
+                            <h4 class="font-semibold mb-3">🔄 중복 방지 초기화</h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                동일한 장소에서 오전/오후 행사를 진행할 때 사용자들이 다시 출석 체크할 수 있도록 중복 방지 기록을 초기화합니다.
+                            </p>
+                            <button class="btn btn-danger w-full" onclick="resetDuplicateCheck()">
+                                🗑️ 중복 방지 초기화
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white p-4 rounded-lg border">
+                            <h4 class="font-semibold mb-3">📊 데이터 관리</h4>
+                            <p class="text-sm text-gray-600 mb-3">
+                                출석 데이터를 내보내거나 시스템을 초기화할 수 있습니다.
+                            </p>
+                            <div class="space-y-2">
+                                <button class="btn btn-primary w-full" onclick="exportData()">
+                                    📥 데이터 내보내기
+                                </button>
+                                <button class="btn btn-danger w-full" onclick="clearAllData()">
+                                    🗑️ 모든 데이터 삭제
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 설정 관리 -->
+                <div class="section">
+                    <h3>🔧 고급 설정</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">관리자 비밀번호 변경</label>
+                            <div class="space-y-2">
+                                <input type="password" id="newPassword" placeholder="새 비밀번호" class="form-group input">
+                                <button class="btn btn-primary" onclick="changePassword()">비밀번호 변경</button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">GPS 정확도 설정</label>
+                            <div class="space-y-2">
+                                <input type="number" id="gpsRadius" placeholder="허용 반경 (미터)" value="30" min="5" max="100" class="form-group input">
+                                <button class="btn btn-success" onclick="updateGPSSettings()">설정 저장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모달 -->
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="modalIcon" class="modal-icon"></div>
+            <h3 id="modalTitle" class="text-xl font-bold mb-3"></h3>
+            <p id="modalMessage" class="text-gray-600 mb-6"></p>
+            <button id="modalCloseBtn" class="btn btn-primary" onclick="closeModal()">확인</button>
+        </div>
+    </div>
+
+    <script>
+        // 설정
+        const CONFIG = {
+            ADMIN_PASSWORD: 'admin123', // 기본 비밀번호
+            GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyHR3TluFeGtUxZt7qGm37gsSJ3sw0y4GWtiPHeQbNlkOc1ycS1vTrOLW9AHdEjaObc8Q/exec'
         };
-        result = updateSystemSettings(settings);
-        break;
-        
-      case 'updatePassword':
-        console.log('비밀번호 변경 알림');
-        if (!params.adminPassword || params.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
-        }
-        result = {
-          success: true,
-          message: '비밀번호 변경 알림 수신됨',
-          timestamp: new Date().toISOString()
-        };
-        break;
-        
-      case 'updateGPSRadius':
-        console.log('GPS 반경 업데이트 요청');
-        if (!params.adminPassword || params.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
-        }
-        const radius = parseInt(params.gpsRadius);
-        if (isNaN(radius) || radius < 5 || radius > 100) {
-          throw new Error('GPS 반경은 5-100미터 사이여야 합니다.');
-        }
-        result = updateGPSRadius(radius);
-        break;
-        
-      case 'notifyReset':
-        console.log('중복 방지 초기화 알림');
-        if (!params.adminPassword || params.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
-        }
-        result = {
-          success: true,
-          message: '중복 방지 초기화 알림 수신됨',
-          timestamp: new Date().toISOString()
-        };
-        break;
-        
-      default:
-        throw new Error('알 수 없는 관리자 액션: ' + params.action);
-    }
-    
-    console.log('액션 처리 결과:', result);
-    
-    // JSONP 콜백이 있으면 JSONP 응답, 없으면 JSON 응답
-    if (params.callback) {
-      console.log('JSONP 콜백 응답:', params.callback);
-      const jsonpResponse = params.callback + '(' + JSON.stringify(result) + ');';
-      return ContentService
-        .createTextOutput(jsonpResponse)
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    } else {
-      console.log('일반 JSON 응답');
-      return ContentService
-        .createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-  } catch (error) {
-    console.error('관리자 액션 처리 오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    const errorResult = {
-      success: false,
-      message: error.toString(),
-      error: error.toString(),
-      action: params.action,
-      timestamp: new Date().toISOString()
-    };
-    
-    // JSONP 콜백이 있으면 JSONP 오류 응답
-    if (params.callback) {
-      const jsonpErrorResponse = params.callback + '(' + JSON.stringify(errorResult) + ');';
-      return ContentService
-        .createTextOutput(jsonpErrorResponse)
-        .setMimeType(ContentService.MimeType.JAVASCRIPT);
-    } else {
-      return ContentService
-        .createTextOutput(JSON.stringify(errorResult))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-  }
-}
 
-// 관리자 기능 처리 (POST 요청)
-function handleAdminActionPost(data) {
-  console.log('관리자 POST 액션:', data.action);
-  
-  try {
-    switch (data.action) {
-      case 'clearAllData':
-        // 간단한 보안 확인
-        if (!data.adminPassword || data.adminPassword.length < 6) {
-          throw new Error('관리자 권한이 필요합니다.');
+        class AdminSystem {
+            constructor() {
+                this.currentSettings = {
+                    eventTitle: '🎓 세미나실 출석 체크',
+                    eventDescription: '행사 참석 확인을 위해 정보를 입력해 주세요',
+                    manualInstruction: '행사장 앞쪽에 비치된 <strong>\'참석자 명부\'</strong>에 직접 기재해 주시기 바랍니다.',
+                    locations: [
+                        { name: '단호홀', lat: 37.228848, lng: 127.167855, radius: 30 },
+                        { name: '벽소홀', lat: 37.228767, lng: 127.167449, radius: 30 },
+                        { name: '대학교 본관', lat: 37.227239, lng: 127.166598, radius: 30 }
+                    ]
+                };
+                this.init();
+            }
+
+            init() {
+                this.loadSettings();
+                this.setupEventListeners();
+                this.renderLocations();
+                this.refreshStats();
+            }
+
+            setupEventListeners() {
+                document.getElementById('loginForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleLogin();
+                });
+            }
+
+            handleLogin() {
+                const password = document.getElementById('adminPassword').value;
+                const savedPassword = localStorage.getItem('adminPassword') || CONFIG.ADMIN_PASSWORD;
+                
+                if (password === savedPassword) {
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    this.loadSettings();
+                    this.refreshStats();
+                } else {
+                    this.showModal('error', '로그인 실패', '비밀번호가 올바르지 않습니다.');
+                }
+            }
+
+            logout() {
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('adminPassword').value = '';
+            }
+
+            loadSettings() {
+                // 로컬 스토리지에서 설정 불러오기
+                const savedSettings = localStorage.getItem('attendanceSettings');
+                if (savedSettings) {
+                    this.currentSettings = { ...this.currentSettings, ...JSON.parse(savedSettings) };
+                }
+
+                // UI에 설정 적용
+                document.getElementById('eventTitle').value = this.currentSettings.eventTitle;
+                document.getElementById('eventDescription').value = this.currentSettings.eventDescription;
+                document.getElementById('manualInstruction').value = this.currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
+                document.getElementById('gpsRadius').value = this.currentSettings.locations[0]?.radius || 30;
+            }
+
+            saveEventSettings() {
+                this.currentSettings.eventTitle = document.getElementById('eventTitle').value;
+                this.currentSettings.eventDescription = document.getElementById('eventDescription').value;
+                this.currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
+
+                this.saveSettings();
+                this.showModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
+            }
+
+            renderLocations() {
+                const container = document.getElementById('locationsContainer');
+                container.innerHTML = '';
+
+                this.currentSettings.locations.forEach((location, index) => {
+                    const locationDiv = document.createElement('div');
+                    locationDiv.className = 'location-item';
+                    locationDiv.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-semibold text-lg">위치 ${index + 1}</h4>
+                            <button class="btn btn-danger btn-sm" onclick="adminSystem.removeLocation(${index})">삭제</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">장소명</label>
+                                <input type="text" value="${location.name}" 
+                                       onchange="adminSystem.updateLocation(${index}, 'name', this.value)"
+                                       class="w-full p-2 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">허용 반경 (미터)</label>
+                                <input type="number" value="${location.radius}" min="5" max="100"
+                                       onchange="adminSystem.updateLocation(${index}, 'radius', this.value)"
+                                       class="w-full p-2 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">위도 (Latitude)</label>
+                                <input type="number" step="0.000001" value="${location.lat}"
+                                       onchange="adminSystem.updateLocation(${index}, 'lat', this.value)"
+                                       class="w-full p-2 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">경도 (Longitude)</label>
+                                <input type="number" step="0.000001" value="${location.lng}"
+                                       onchange="adminSystem.updateLocation(${index}, 'lng', this.value)"
+                                       class="w-full p-2 border rounded">
+                            </div>
+                        </div>
+                        <div class="mt-2 text-sm text-gray-600">
+                            <a href="https://www.google.com/maps?q=${location.lat},${location.lng}" target="_blank" 
+               class="text-blue-600 hover:underline">📍 Google Maps에서 확인</a>
+                        </div>
+                    `;
+                    container.appendChild(locationDiv);
+                });
+
+                // 위치 추가 버튼
+                if (this.currentSettings.locations.length < 3) {
+                    const addButton = document.createElement('div');
+                    addButton.innerHTML = `
+                        <button class="btn btn-primary w-full" onclick="adminSystem.addLocation()">
+                            ➕ 새 위치 추가
+                        </button>
+                    `;
+                    container.appendChild(addButton);
+                }
+            }
+
+            addLocation() {
+                if (this.currentSettings.locations.length < 3) {
+                    this.currentSettings.locations.push({
+                        name: `새 장소 ${this.currentSettings.locations.length + 1}`,
+                        lat: 37.5665,
+                        lng: 126.9780,
+                        radius: 30
+                    });
+                    this.renderLocations();
+                }
+            }
+
+            removeLocation(index) {
+                if (this.currentSettings.locations.length > 1) {
+                    this.currentSettings.locations.splice(index, 1);
+                    this.renderLocations();
+                } else {
+                    this.showModal('warning', '삭제 불가', '최소 1개의 위치는 설정되어야 합니다.');
+                }
+            }
+
+            updateLocation(index, field, value) {
+                if (field === 'lat' || field === 'lng') {
+                    this.currentSettings.locations[index][field] = parseFloat(value);
+                } else if (field === 'radius') {
+                    this.currentSettings.locations[index][field] = parseInt(value);
+                } else {
+                    this.currentSettings.locations[index][field] = value;
+                }
+            }
+
+            async getCurrentLocation() {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 60000
+                        });
+                    });
+
+                    const { latitude, longitude } = position.coords;
+                    
+                    // 첫 번째 위치에 현재 위치 설정
+                    if (this.currentSettings.locations.length > 0) {
+                        this.currentSettings.locations[0].lat = latitude;
+                        this.currentSettings.locations[0].lng = longitude;
+                        this.currentSettings.locations[0].name = '현재 위치';
+                        this.renderLocations();
+                        this.showModal('success', '위치 가져오기 성공', 
+                            `현재 위치가 설정되었습니다.<br>위도: ${latitude.toFixed(6)}<br>경도: ${longitude.toFixed(6)}`);
+                    }
+                } catch (error) {
+                    this.showModal('error', '위치 가져오기 실패', 
+                        'GPS 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+                }
+            }
+
+            saveLocations() {
+                this.saveSettings();
+                this.showModal('success', '저장 완료', '위치 설정이 성공적으로 저장되었습니다.');
+            }
+
+            saveSettings() {
+                localStorage.setItem('attendanceSettings', JSON.stringify(this.currentSettings));
+                
+                // 실제 출석 체크 페이지의 설정도 업데이트 (localStorage 공유)
+                const configForAttendance = {
+                    eventTitle: this.currentSettings.eventTitle,
+                    eventDescription: this.currentSettings.eventDescription,
+                    manualInstruction: this.currentSettings.manualInstruction,
+                    allowedLocations: this.currentSettings.locations
+                };
+                
+                localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
+            }
+
+            async refreshStats() {
+                try {
+                    document.getElementById('totalAttendees').textContent = '로딩...';
+                    document.getElementById('uniqueDevices').textContent = '로딩...';
+                    document.getElementById('duplicateCount').textContent = '로딩...';
+                    document.getElementById('lastUpdate').textContent = '로딩...';
+                    
+                    // 여러 방법으로 통계 가져오기 시도
+                    let data = null;
+                    
+                    // 방법 1: GET 파라미터로 요청
+                    try {
+                        console.log('통계 요청 시도 1: GET 파라미터');
+                        const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getStats&timestamp=${Date.now()}`;
+                        console.log('요청 URL:', url);
+                        
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const textResponse = await response.text();
+                            console.log('응답 텍스트:', textResponse);
+                            data = JSON.parse(textResponse);
+                        }
+                    } catch (error1) {
+                        console.warn('방법 1 실패:', error1);
+                        
+                        // 방법 2: JSONP 방식으로 시도
+                        try {
+                            console.log('통계 요청 시도 2: JSONP');
+                            data = await this.getStatsViaJSONP();
+                        } catch (error2) {
+                            console.warn('방법 2 실패:', error2);
+                            
+                            // 방법 3: 직접 스프레드시트 통계 계산 (기본 통계)
+                            console.log('통계 요청 시도 3: 기본 통계');
+                            data = this.getBasicStats();
+                        }
+                    }
+                    
+                    // 통계 표시
+                    if (data && typeof data === 'object') {
+                        // 기본값으로 안전하게 표시
+                        document.getElementById('totalAttendees').textContent = data.totalAttendees || '0';
+                        document.getElementById('uniqueDevices').textContent = data.uniqueDevices || '0';
+                        document.getElementById('duplicateCount').textContent = data.duplicates || data.duplicateCount || '0';
+                        
+                        const lastUpdate = data.lastUpdate || data.timestamp;
+                        if (lastUpdate) {
+                            try {
+                                const updateTime = new Date(lastUpdate).toLocaleString('ko-KR');
+                                document.getElementById('lastUpdate').textContent = updateTime;
+                            } catch (dateError) {
+                                document.getElementById('lastUpdate').textContent = '방금 전';
+                            }
+                        } else {
+                            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
+                        }
+                        
+                        console.log('통계 업데이트 성공:', data);
+                    } else {
+                        throw new Error('통계 데이터 형식이 올바르지 않습니다.');
+                    }
+                    
+                } catch (error) {
+                    console.error('통계 조회 최종 실패:', error);
+                    
+                    // 오류 시 기본값 표시
+                    document.getElementById('totalAttendees').textContent = '오류';
+                    document.getElementById('uniqueDevices').textContent = '오류';
+                    document.getElementById('duplicateCount').textContent = '오류';
+                    document.getElementById('lastUpdate').textContent = '조회 실패';
+                    
+                    // 사용자에게 알림 (너무 자주 뜨지 않도록 조건부)
+                    if (!this.lastErrorTime || Date.now() - this.lastErrorTime > 60000) { // 1분에 한 번만
+                        this.displayModal('warning', '통계 조회 실패', 
+                            '통계를 가져오는데 실패했습니다. Google Apps Script 설정을 확인해주세요.<br>' +
+                            '<small>오류: ' + error.message + '</small>');
+                        this.lastErrorTime = Date.now();
+                    }
+                }
+            }
+
+            async getStatsViaJSONP() {
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'statsCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    // 전역 콜백 함수 등록
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('JSONP 통계 응답:', response);
+                        resolve(response);
+                    };
+
+                    // 타임아웃 설정
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        reject(new Error('JSONP 통계 요청 타임아웃'));
+                    }, 10000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    // 스크립트 태그 생성
+                    const script = document.createElement('script');
+                    script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getStats&callback=${callbackName}&timestamp=${Date.now()}`;
+                    script.onerror = function() {
+                        cleanup();
+                        reject(new Error('JSONP 스크립트 로드 실패'));
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            getBasicStats() {
+                // 로컬 스토리지에서 기본 통계 계산
+                const keys = Object.keys(localStorage);
+                const attendanceKeys = keys.filter(key => key.startsWith('attendance_'));
+                
+                return {
+                    success: true,
+                    totalAttendees: attendanceKeys.length,
+                    uniqueDevices: attendanceKeys.length,
+                    duplicates: 0,
+                    lastUpdate: new Date().toISOString(),
+                    source: 'local_estimation'
+                };
+            }
+
+            async resetDuplicateCheck() {
+                if (!confirm('정말로 중복 방지 기록을 초기화하시겠습니까? 모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
+                    return;
+                }
+
+                try {
+                    console.log('중복 방지 초기화 시작');
+                    
+                    // 1단계: 로컬 스토리지의 중복 방지 기록 삭제
+                    const keys = Object.keys(localStorage);
+                    let removedCount = 0;
+                    
+                    keys.forEach(key => {
+                        if (key.startsWith('attendance_')) {
+                            localStorage.removeItem(key);
+                            removedCount++;
+                        }
+                    });
+
+                    // 2단계: 세션 스토리지도 초기화
+                    sessionStorage.clear();
+
+                    // 3단계: 쿠키도 삭제
+                    document.cookie.split(";").forEach(cookie => {
+                        const eqPos = cookie.indexOf("=");
+                        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+                        if (name.trim().startsWith('attendance_')) {
+                            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                        }
+                    });
+
+                    console.log('로컬 중복 방지 초기화 완료:', removedCount + '개 항목 삭제');
+
+                    // 4단계: 서버에 초기화 알림 (선택사항)
+                    try {
+                        await this.notifyServerReset();
+                    } catch (serverError) {
+                        console.warn('서버 알림 실패 (무시 가능):', serverError);
+                    }
+
+                    // showModal 대신 직접 모달 표시
+                    this.displayModal('success', '초기화 완료', 
+                        '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
+                        '모든 사용자가 다시 출석 체크할 수 있습니다.<br>' +
+                        '<small>삭제된 로컬 기록: ' + removedCount + '개</small>');
+                    
+                } catch (error) {
+                    console.error('초기화 오류:', error);
+                    this.displayModal('error', '초기화 실패', 
+                        '중복 방지 기록 초기화에 실패했습니다.<br><small>' + error.message + '</small>');
+                }
+            }
+
+            displayModal(type, title, message) {
+                try {
+                    console.log('모달 표시 시도:', type, title);
+                    
+                    const modal = document.getElementById('modal');
+                    const modalIcon = document.getElementById('modalIcon');
+                    const modalTitle = document.getElementById('modalTitle');
+                    const modalMessage = document.getElementById('modalMessage');
+
+                    if (!modal) {
+                        console.error('모달 요소(#modal)를 찾을 수 없습니다');
+                        alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
+                        return;
+                    }
+
+                    if (!modalIcon || !modalTitle || !modalMessage) {
+                        console.error('모달 하위 요소를 찾을 수 없습니다');
+                        alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
+                        return;
+                    }
+
+                    modalIcon.className = 'modal-icon ' + type;
+                    switch(type) {
+                        case 'success': modalIcon.textContent = '✅'; break;
+                        case 'error': modalIcon.textContent = '❌'; break;
+                        case 'warning': modalIcon.textContent = '⚠️'; break;
+                        default: modalIcon.textContent = 'ℹ️';
+                    }
+
+                    modalTitle.textContent = title;
+                    modalMessage.innerHTML = message;
+                    
+                    modal.classList.add('active');
+                    console.log('모달 표시 완료');
+                } catch (error) {
+                    console.error('모달 표시 오류:', error);
+                    console.error('오류 스택:', error.stack);
+                    // 최후의 수단으로 alert 사용
+                    alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
+                }
+            }
+
+            async notifyServerReset() {
+                // 서버에 초기화 알림 (로그 목적)
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'resetCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        resolve(response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        resolve({ success: true, message: '타임아웃 - 무시됨' }); // 오류로 처리하지 않음
+                    }, 5000); // 짧은 타임아웃
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'notifyReset');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        resolve({ success: true, message: '서버 알림 실패 - 무시됨' });
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            async exportData() {
+                try {
+                    console.log('데이터 내보내기 시작');
+                    
+                    // 여러 방법으로 시도
+                    let data;
+                    
+                    try {
+                        // 방법 1: 직접 GET 요청
+                        console.log('내보내기 방법 1: 직접 GET 요청');
+                        const response = await fetch(`${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&timestamp=${Date.now()}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const textResponse = await response.text();
+                            console.log('내보내기 응답 텍스트:', textResponse);
+                            
+                            // JSON 파싱 시도
+                            try {
+                                data = JSON.parse(textResponse);
+                            } catch (parseError) {
+                                console.warn('JSON 파싱 실패, 일반 메시지로 처리:', textResponse);
+                                // 일반 메시지인 경우 (예: "시스템이 정상 작동 중입니다")
+                                throw new Error('서버에서 올바른 내보내기 응답을 받지 못했습니다. Apps Script 설정을 확인해주세요.');
+                            }
+                        } else {
+                            throw new Error('HTTP ' + response.status);
+                        }
+                    } catch (fetchError) {
+                        console.warn('직접 요청 실패, JSONP 시도:', fetchError);
+                        
+                        // 방법 2: JSONP 방식
+                        console.log('내보내기 방법 2: JSONP');
+                        data = await this.exportDataViaJSONP();
+                    }
+                    
+                    console.log('내보내기 데이터:', data);
+                    
+                    if (data && data.success && data.spreadsheetUrl) {
+                        // 성공: 스프레드시트 열기
+                        window.open(data.spreadsheetUrl, '_blank');
+                        
+                        let message = '스프레드시트가 새 탭에서 열렸습니다.';
+                        if (data.dataInfo) {
+                            message += '<br><small>데이터: ' + data.dataInfo + '</small>';
+                        }
+                        if (data.spreadsheetName) {
+                            message += '<br><small>파일명: ' + data.spreadsheetName + '</small>';
+                        }
+                        
+                        this.showModal('success', '데이터 내보내기', message);
+                    } else if (data && !data.success) {
+                        // 실패: 오류 메시지 표시
+                        let errorMessage = data.message || '데이터 내보내기 실패';
+                        if (data.troubleshooting) {
+                            errorMessage += '<br><br><small>해결 방법:<br>' + 
+                                           data.troubleshooting.map(tip => '• ' + tip).join('<br>') + 
+                                           '</small>';
+                        }
+                        throw new Error(errorMessage);
+                    } else {
+                        // 예상치 못한 응답
+                        throw new Error('서버에서 올바른 응답을 받지 못했습니다.');
+                    }
+                    
+                } catch (error) {
+                    console.error('데이터 내보내기 오류:', error);
+                    
+                    let errorMessage = '데이터 내보내기에 실패했습니다.';
+                    if (error.message.includes('스프레드시트 ID')) {
+                        errorMessage += '<br><br><small>Google Apps Script에서 SPREADSHEET_ID를 확인해주세요.</small>';
+                    } else if (error.message.includes('권한')) {
+                        errorMessage += '<br><br><small>스프레드시트 접근 권한을 확인해주세요.</small>';
+                    }
+                    errorMessage += '<br><small>오류: ' + error.message + '</small>';
+                    
+                    this.showModal('error', '내보내기 실패', errorMessage);
+                }
+            }
+
+            async exportDataViaJSONP() {
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'exportCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('내보내기 JSONP 응답:', response);
+                        resolve(response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        reject(new Error('내보내기 요청 타임아웃'));
+                    }, 15000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const script = document.createElement('script');
+                    script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&callback=${callbackName}&timestamp=${Date.now()}`;
+                    script.onerror = function() {
+                        cleanup();
+                        reject(new Error('내보내기 스크립트 로드 실패'));
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            async clearAllData() {
+                if (!confirm('정말로 모든 출석 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                    return;
+                }
+
+                const confirmText = prompt('정말로 삭제하시겠습니까? "DELETE"를 입력하세요:');
+                if (confirmText !== 'DELETE') {
+                    return;
+                }
+
+                try {
+                    console.log('모든 데이터 삭제 시작');
+                    
+                    // JSONP 방식으로 삭제 요청
+                    const data = await this.clearAllDataViaJSONP();
+                    
+                    if (data.success) {
+                        this.displayModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
+                        // 통계 새로고침
+                        setTimeout(() => {
+                            this.refreshStats();
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || '데이터 삭제 실패');
+                    }
+                } catch (error) {
+                    console.error('데이터 삭제 오류:', error);
+                    this.displayModal('error', '삭제 실패', 
+                        '데이터 삭제에 실패했습니다.<br><small>' + error.message + '</small>');
+                }
+            }
+
+            async clearAllDataViaJSONP() {
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'clearDataCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    // 전역 콜백 함수 등록
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('데이터 삭제 JSONP 응답:', response);
+                        resolve(response);
+                    };
+
+                    // 타임아웃 설정
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        reject(new Error('데이터 삭제 요청 타임아웃'));
+                    }, 15000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    // 삭제 요청 데이터
+                    const requestData = {
+                        action: 'clearAllData',
+                        adminPassword: localStorage.getItem('adminPassword') || 'admin123',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    // URL 파라미터 생성 (GET 방식으로 전송)
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'clearAllData');
+                    params.append('adminPassword', requestData.adminPassword);
+                    params.append('timestamp', requestData.timestamp);
+                    
+                    const fullUrl = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    console.log('데이터 삭제 JSONP 요청 URL:', fullUrl);
+
+                    // 스크립트 태그 생성
+                    const script = document.createElement('script');
+                    script.src = fullUrl;
+                    script.onerror = function() {
+                        cleanup();
+                        reject(new Error('데이터 삭제 스크립트 로드 실패'));
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            async changePassword() {
+                const newPassword = document.getElementById('newPassword').value;
+                
+                if (!newPassword || newPassword.length < 6) {
+                    this.displayModal('warning', '비밀번호 오류', '비밀번호는 6자 이상이어야 합니다.');
+                    return;
+                }
+
+                try {
+                    // 로컬에 저장
+                    localStorage.setItem('adminPassword', newPassword);
+                    
+                    // 서버에도 알림 (선택사항)
+                    try {
+                        await this.updatePasswordOnServer(newPassword);
+                    } catch (serverError) {
+                        console.warn('서버 비밀번호 업데이트 실패 (로컬은 성공):', serverError);
+                    }
+                    
+                    document.getElementById('newPassword').value = '';
+                    this.displayModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
+                } catch (error) {
+                    console.error('비밀번호 변경 오류:', error);
+                    this.displayModal('error', '변경 실패', '비밀번호 변경에 실패했습니다.');
+                }
+            }
+
+            async updatePasswordOnServer(newPassword) {
+                // 서버에 비밀번호 변경 알림 (보안상 실제 비밀번호는 전송하지 않음)
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'passwordCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        resolve(response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        resolve({ success: true, message: '타임아웃 - 로컬 변경만 적용됨' });
+                    }, 5000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updatePassword');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        resolve({ success: true, message: '서버 알림 실패 - 로컬 변경만 적용됨' });
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            saveEventSettings() {
+                try {
+                    this.currentSettings.eventTitle = document.getElementById('eventTitle').value;
+                    this.currentSettings.eventDescription = document.getElementById('eventDescription').value;
+                    this.currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
+
+                    // 입력값 검증
+                    if (!this.currentSettings.eventTitle.trim()) {
+                        this.displayModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                        return;
+                    }
+
+                    if (!this.currentSettings.eventDescription.trim()) {
+                        this.displayModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
+                        return;
+                    }
+
+                    this.saveSettings();
+                    
+                    // 서버에도 전송 시도
+                    this.saveEventSettingsToServer();
+                    
+                    this.displayModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
+                } catch (error) {
+                    console.error('설정 저장 오류:', error);
+                    this.displayModal('error', '저장 실패', '설정 저장에 실패했습니다.');
+                }
+            }
+
+            async saveEventSettingsToServer() {
+                try {
+                    const callbackName = 'settingsCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('서버 설정 저장 성공:', response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        console.log('서버 설정 저장 타임아웃 (로컬 저장은 완료됨)');
+                    }, 10000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updateSettings');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('eventTitle', this.currentSettings.eventTitle);
+                    params.append('eventDescription', this.currentSettings.eventDescription);
+                    params.append('manualInstruction', this.currentSettings.manualInstruction);
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        console.log('서버 설정 저장을 시도했으나 실패 (로컬 저장은 완료됨)');
+                    };
+
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.log('서버 설정 저장을 시도했으나 실패 (로컬 저장은 완료됨):', error.message);
+                }
+            }
+
+            updateGPSSettings() {
+                try {
+                    const radius = parseInt(document.getElementById('gpsRadius').value);
+                    
+                    if (isNaN(radius) || radius < 5 || radius > 100) {
+                        this.displayModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
+                        return;
+                    }
+
+                    // 모든 위치의 반경 업데이트
+                    this.currentSettings.locations.forEach(location => {
+                        location.radius = radius;
+                    });
+
+                    this.saveSettings();
+                    this.renderLocations();
+                    
+                    // 서버에도 업데이트 시도
+                    this.updateGPSSettingsOnServer(radius);
+                    
+                    this.displayModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
+                } catch (error) {
+                    console.error('GPS 설정 오류:', error);
+                    this.displayModal('error', '설정 실패', 'GPS 설정 업데이트에 실패했습니다.');
+                }
+            }
+
+            async             updateGPSSettingsOnServer(radius) {
+                try {
+                    const callbackName = 'gpsCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('GPS 설정 서버 응답:', response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        console.log('GPS 설정 서버 업데이트 타임아웃');
+                    }, 5000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updateGPSRadius');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('gpsRadius', radius);
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        console.warn('GPS 설정 서버 업데이트 실패');
+                    };
+
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.warn('GPS 설정 서버 업데이트 오류:', error);
+                }
+            }
+
+            showModal(type, title, message) {
+                this.displayModal(type, title, message);
+            }
+
+            closeModal() {
+                try {
+                    const modal = document.getElementById('modal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('모달 닫기 오류:', error);
+                }
+            }
         }
-        
-        const clearResult = clearAllAttendanceData();
-        return ContentService
-          .createTextOutput(JSON.stringify(clearResult))
-          .setMimeType(ContentService.MimeType.JSON);
-          
-      case 'updateSettings':
-        const updateResult = updateSystemSettings(data.settings);
-        return ContentService
-          .createTextOutput(JSON.stringify(updateResult))
-          .setMimeType(ContentService.MimeType.JSON);
-          
-      default:
-        throw new Error('알 수 없는 관리자 액션: ' + data.action);
-    }
-  } catch (error) {
-    console.error('관리자 POST 액션 처리 오류:', error);
-    return ContentService
-      .createTextOutput(JSON.stringify({
-        success: false,
-        message: error.toString(),
-        error: error.toString()
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
 
-// 출석 데이터 내보내기 - 강화된 버전
-function exportAttendanceData() {
-  try {
-    console.log('=== 데이터 내보내기 시작 ===');
-    
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      console.warn('SPREADSHEET_ID 미설정');
-      throw new Error('스프레드시트 ID가 설정되지 않았습니다. Apps Script 코드에서 SPREADSHEET_ID를 확인해주세요.');
-    }
-    
-    console.log('스프레드시트 ID:', SPREADSHEET_ID);
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const url = spreadsheet.getUrl();
-    const name = spreadsheet.getName();
-    
-    console.log('스프레드시트 이름:', name);
-    console.log('스프레드시트 URL:', url);
-    
-    // 데이터 존재 여부 확인
-    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    let dataInfo = '데이터 없음';
-    
-    if (sheet) {
-      const lastRow = sheet.getLastRow();
-      const lastCol = sheet.getLastColumn();
-      dataInfo = `${lastRow - 1}행 × ${lastCol}열 (헤더 제외)`;
-      console.log('데이터 정보:', dataInfo);
-    } else {
-      console.log('시트가 존재하지 않음:', SHEET_NAME);
-    }
-    
-    const result = {
-      success: true,
-      spreadsheetUrl: url,
-      spreadsheetId: SPREADSHEET_ID,
-      spreadsheetName: name,
-      sheetName: SHEET_NAME,
-      dataInfo: dataInfo,
-      exportTime: new Date().toISOString(),
-      message: '데이터 내보내기 성공'
-    };
-    
-    console.log('=== 데이터 내보내기 완료 ===');
-    console.log('결과:', result);
-    
-    return result;
-    
-  } catch (error) {
-    console.error('데이터 내보내기 오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    // 상세한 오류 정보 반환
-    const errorResult = {
-      success: false,
-      message: error.toString(),
-      error: error.toString(),
-      spreadsheetId: SPREADSHEET_ID || '미설정',
-      sheetName: SHEET_NAME,
-      exportTime: new Date().toISOString(),
-      troubleshooting: [
-        'SPREADSHEET_ID가 올바르게 설정되었는지 확인',
-        '스프레드시트에 대한 읽기 권한이 있는지 확인',
-        '스프레드시트가 삭제되지 않았는지 확인'
-      ]
-    };
-    
-    console.log('오류 결과:', errorResult);
-    throw error;
-  }
-}
-
-// 모든 출석 데이터 삭제
-function clearAllAttendanceData() {
-  try {
-    console.log('=== 모든 데이터 삭제 시작 ===');
-    
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      throw new Error('스프레드시트 ID가 설정되지 않았습니다.');
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      console.log('삭제할 시트가 없습니다.');
-      return { success: true, message: '삭제할 데이터가 없습니다.' };
-    }
-    
-    const lastRow = sheet.getLastRow();
-    console.log('삭제 전 마지막 행:', lastRow);
-    
-    if (lastRow > 1) {
-      // 헤더(1행)를 제외한 모든 데이터 삭제
-      sheet.deleteRows(2, lastRow - 1);
-      console.log('데이터 행 삭제 완료');
-    }
-    
-    // 강제 저장
-    SpreadsheetApp.flush();
-    
-    const afterLastRow = sheet.getLastRow();
-    console.log('삭제 후 마지막 행:', afterLastRow);
-    
-    console.log('=== 모든 데이터 삭제 완료 ===');
-    
-    return {
-      success: true,
-      message: '모든 출석 데이터가 삭제되었습니다.',
-      deletedRows: lastRow - 1,
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('데이터 삭제 오류:', error);
-    throw error;
-  }
-}
-
-// 시스템 설정 업데이트
-function updateSystemSettings(settings) {
-  try {
-    console.log('=== 시스템 설정 업데이트 ===');
-    console.log('새 설정:', settings);
-    
-    // PropertiesService를 사용하여 설정 저장
-    const properties = PropertiesService.getScriptProperties();
-    
-    if (settings.eventTitle) {
-      properties.setProperty('eventTitle', settings.eventTitle);
-    }
-    
-    if (settings.eventDescription) {
-      properties.setProperty('eventDescription', settings.eventDescription);
-    }
-    
-    if (settings.manualInstruction) {
-      properties.setProperty('manualInstruction', settings.manualInstruction);
-    }
-    
-    if (settings.locations) {
-      properties.setProperty('allowedLocations', JSON.stringify(settings.locations));
-    }
-    
-    console.log('설정 저장 완료');
-    
-    return {
-      success: true,
-      message: '시스템 설정이 업데이트되었습니다.',
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('설정 업데이트 오류:', error);
-    throw error;
-  }
-}
-
-// 시스템 설정 조회
-function getSystemSettings() {
-  try {
-    const properties = PropertiesService.getScriptProperties();
-    
-    const settings = {
-      eventTitle: properties.getProperty('eventTitle') || '🎓 세미나실 출석 체크',
-      eventDescription: properties.getProperty('eventDescription') || '행사 참석 확인을 위해 정보를 입력해 주세요',
-      manualInstruction: properties.getProperty('manualInstruction') || '행사장 앞쪽에 비치된 <strong>\'참석자 명부\'</strong>에 직접 기재해 주시기 바랍니다.',
-      allowedLocations: JSON.parse(properties.getProperty('allowedLocations') || '[]')
-    };
-    
-    // 기본 위치 설정이 없으면 기본값 설정
-    if (settings.allowedLocations.length === 0) {
-      settings.allowedLocations = [
-        { name: '단호홀', lat: 37.228848, lng: 127.167855, radius: 30 },
-        { name: '벽소홀', lat: 37.228767, lng: 127.167449, radius: 30 },
-        { name: '대학교 본관', lat: 37.227239, lng: 127.166598, radius: 30 }
-      ];
-    }
-    
-    return {
-      success: true,
-      settings: settings,
-      timestamp: new Date().toISOString()
-    };
-    
-  } catch (error) {
-    console.error('설정 조회 오류:', error);
-    throw error;
-  }
-}
-
-// 통계 조회 함수 (강화된 버전)
-function getAttendanceStats() {
-  try {
-    console.log('=== 통계 조회 시작 ===');
-    
-    if (!SPREADSHEET_ID || SPREADSHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-      console.warn('SPREADSHEET_ID 미설정, 기본 통계 반환');
-      return {
-        success: true,
-        totalAttendees: 0,
-        uniqueDevices: 0,
-        duplicates: 0,
-        lastUpdate: new Date().toISOString(),
-        message: 'SPREADSHEET_ID 미설정'
-      };
-    }
-    
-    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
-    
-    if (!sheet) {
-      console.log('시트가 존재하지 않음');
-      return {
-        success: true,
-        totalAttendees: 0,
-        uniqueDevices: 0,
-        duplicates: 0,
-        lastUpdate: new Date().toISOString(),
-        message: '데이터 시트 없음'
-      };
-    }
-    
-    const lastRow = sheet.getLastRow();
-    console.log('마지막 행:', lastRow);
-    
-    if (lastRow <= 1) {
-      console.log('데이터 없음 (헤더만 존재)');
-      return {
-        success: true,
-        totalAttendees: 0,
-        uniqueDevices: 0,
-        duplicates: 0,
-        lastUpdate: new Date().toISOString(),
-        message: '출석 데이터 없음'
-      };
-    }
-    
-    // 모든 데이터 가져오기 (헤더 제외)
-    const dataRange = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn());
-    const data = dataRange.getValues();
-    console.log('데이터 행 수:', data.length);
-    
-    // 기기 ID는 9번째 열 (인덱스 8)
-    const deviceIds = data.map(row => row[8]).filter(id => id && id.toString().trim() !== '');
-    console.log('유효한 기기 ID 수:', deviceIds.length);
-    
-    // 고유 기기 수 계산
-    const uniqueDeviceIds = [...new Set(deviceIds)];
-    const uniqueDevices = uniqueDeviceIds.length;
-    const totalAttendees = deviceIds.length;
-    const duplicates = totalAttendees - uniqueDevices;
-    
-    console.log('통계 계산 완료:', {
-      totalAttendees: totalAttendees,
-      uniqueDevices: uniqueDevices,
-      duplicates: duplicates
-    });
-    
-    // 마지막 업데이트 시간 (가장 최근 데이터의 타임스탬프)
-    let lastUpdate = new Date().toISOString();
-    if (data.length > 0) {
-      // 두 번째 열(인덱스 1)이 ISO 타임스탬프
-      const timestamps = data.map(row => row[1]).filter(ts => ts);
-      if (timestamps.length > 0) {
-        const latestTimestamp = timestamps[timestamps.length - 1];
-        if (latestTimestamp instanceof Date) {
-          lastUpdate = latestTimestamp.toISOString();
-        } else if (typeof latestTimestamp === 'string') {
-          lastUpdate = latestTimestamp;
+        // 전역 함수들
+        function logout() {
+            adminSystem.logout();
         }
-      }
-    }
-    
-    const result = {
-      success: true,
-      totalAttendees: totalAttendees,
-      uniqueDevices: uniqueDevices,
-      duplicates: duplicates,
-      lastUpdate: lastUpdate,
-      spreadsheetName: spreadsheet.getName(),
-      dataRows: data.length,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('=== 통계 조회 완료 ===');
-    console.log('최종 결과:', result);
-    
-    return result;
-    
-  } catch (error) {
-    console.error('통계 조회 오류:', error);
-    console.error('오류 스택:', error.stack);
-    
-    // 오류 발생 시에도 기본 구조 반환
-    return {
-      success: false,
-      totalAttendees: 0,
-      uniqueDevices: 0,
-      duplicates: 0,
-      lastUpdate: new Date().toISOString(),
-      error: error.toString(),
-      message: '통계 조회 중 오류 발생'
-    };
-  }
-}
+
+        function closeModal() {
+            adminSystem.closeModal();
+        }
+
+        function refreshStats() {
+            adminSystem.refreshStats();
+        }
+
+        function saveEventSettings() {
+            adminSystem.saveEventSettings();
+        }
+
+        function saveLocations() {
+            adminSystem.saveLocations();
+        }
+
+        function getCurrentLocation() {
+            adminSystem.getCurrentLocation();
+        }
+
+        function resetDuplicateCheck() {
+            adminSystem.resetDuplicateCheck();
+        }
+
+        function exportData() {
+            adminSystem.exportData();
+        }
+
+        function clearAllData() {
+            adminSystem.clearAllData();
+        }
+
+        function changePassword() {
+            adminSystem.changePassword();
+        }
+
+        function updateGPSSettings() {
+            adminSystem.updateGPSSettings();
+        }
+
+        // 시스템 초기화
+        let adminSystem;
+        document.addEventListener('DOMContentLoaded', () => {
+            adminSystem = new AdminSystem();
+        });
+
+        // 주기적 통계 업데이트 (5분마다)
+        setInterval(() => {
+            if (document.getElementById('adminPanel').style.display !== 'none') {
+                adminSystem.refreshStats();
+            }
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
