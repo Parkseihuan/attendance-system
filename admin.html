@@ -808,18 +808,23 @@
                 }
 
                 try {
-                    // 로컬 스토리지의 중복 방지 기록 삭제
+                    console.log('중복 방지 초기화 시작');
+                    
+                    // 1단계: 로컬 스토리지의 중복 방지 기록 삭제
                     const keys = Object.keys(localStorage);
+                    let removedCount = 0;
+                    
                     keys.forEach(key => {
                         if (key.startsWith('attendance_')) {
                             localStorage.removeItem(key);
+                            removedCount++;
                         }
                     });
 
-                    // 세션 스토리지도 초기화
+                    // 2단계: 세션 스토리지도 초기화
                     sessionStorage.clear();
 
-                    // 쿠키도 삭제
+                    // 3단계: 쿠키도 삭제
                     document.cookie.split(";").forEach(cookie => {
                         const eqPos = cookie.indexOf("=");
                         const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
@@ -828,12 +833,69 @@
                         }
                     });
 
-                    this.showModal('success', '초기화 완료', '중복 방지 기록이 성공적으로 초기화되었습니다. 모든 사용자가 다시 출석 체크할 수 있습니다.');
+                    console.log('로컬 중복 방지 초기화 완료:', removedCount + '개 항목 삭제');
+
+                    // 4단계: 서버에 초기화 알림 (선택사항)
+                    try {
+                        await this.notifyServerReset();
+                    } catch (serverError) {
+                        console.warn('서버 알림 실패 (무시 가능):', serverError);
+                    }
+
+                    this.showModal('success', '초기화 완료', 
+                        '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
+                        '모든 사용자가 다시 출석 체크할 수 있습니다.<br>' +
+                        '<small>삭제된 로컬 기록: ' + removedCount + '개</small>');
                     
                 } catch (error) {
                     console.error('초기화 오류:', error);
-                    this.showModal('error', '초기화 실패', '중복 방지 기록 초기화에 실패했습니다.');
+                    this.showModal('error', '초기화 실패', 
+                        '중복 방지 기록 초기화에 실패했습니다.<br><small>' + error.message + '</small>');
                 }
+            }
+
+            async notifyServerReset() {
+                // 서버에 초기화 알림 (로그 목적)
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'resetCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        resolve(response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        resolve({ success: true, message: '타임아웃 - 무시됨' }); // 오류로 처리하지 않음
+                    }, 5000); // 짧은 타임아웃
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'notifyReset');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        resolve({ success: true, message: '서버 알림 실패 - 무시됨' });
+                    };
+
+                    document.head.appendChild(script);
+                });
             }
 
             async exportData() {
