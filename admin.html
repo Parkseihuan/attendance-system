@@ -1069,7 +1069,7 @@
                     const data = await this.clearAllDataViaJSONP();
                     
                     if (data.success) {
-                        this.showModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
+                        this.displayModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
                         // 통계 새로고침
                         setTimeout(() => {
                             this.refreshStats();
@@ -1079,7 +1079,7 @@
                     }
                 } catch (error) {
                     console.error('데이터 삭제 오류:', error);
-                    this.showModal('error', '삭제 실패', 
+                    this.displayModal('error', '삭제 실패', 
                         '데이터 삭제에 실패했습니다.<br><small>' + error.message + '</small>');
                 }
             }
@@ -1146,7 +1146,7 @@
                 const newPassword = document.getElementById('newPassword').value;
                 
                 if (!newPassword || newPassword.length < 6) {
-                    this.showModal('warning', '비밀번호 오류', '비밀번호는 6자 이상이어야 합니다.');
+                    this.displayModal('warning', '비밀번호 오류', '비밀번호는 6자 이상이어야 합니다.');
                     return;
                 }
 
@@ -1162,10 +1162,10 @@
                     }
                     
                     document.getElementById('newPassword').value = '';
-                    this.showModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
+                    this.displayModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
                 } catch (error) {
                     console.error('비밀번호 변경 오류:', error);
-                    this.showModal('error', '변경 실패', '비밀번호 변경에 실패했습니다.');
+                    this.displayModal('error', '변경 실패', '비밀번호 변경에 실패했습니다.');
                 }
             }
 
@@ -1221,12 +1221,12 @@
 
                     // 입력값 검증
                     if (!this.currentSettings.eventTitle.trim()) {
-                        this.showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                        this.displayModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
                         return;
                     }
 
                     if (!this.currentSettings.eventDescription.trim()) {
-                        this.showModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
+                        this.displayModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
                         return;
                     }
 
@@ -1235,10 +1235,10 @@
                     // 서버에도 전송 시도
                     this.saveEventSettingsToServer();
                     
-                    this.showModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
+                    this.displayModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
                 } catch (error) {
                     console.error('설정 저장 오류:', error);
-                    this.showModal('error', '저장 실패', '설정 저장에 실패했습니다.');
+                    this.displayModal('error', '저장 실패', '설정 저장에 실패했습니다.');
                 }
             }
 
@@ -1295,7 +1295,7 @@
                     const radius = parseInt(document.getElementById('gpsRadius').value);
                     
                     if (isNaN(radius) || radius < 5 || radius > 100) {
-                        this.showModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
+                        this.displayModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
                         return;
                     }
 
@@ -1310,10 +1310,10 @@
                     // 서버에도 업데이트 시도
                     this.updateGPSSettingsOnServer(radius);
                     
-                    this.showModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
+                    this.displayModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
                 } catch (error) {
                     console.error('GPS 설정 오류:', error);
-                    this.showModal('error', '설정 실패', 'GPS 설정 업데이트에 실패했습니다.');
+                    this.displayModal('error', '설정 실패', 'GPS 설정 업데이트에 실패했습니다.');
                 }
             }
 
