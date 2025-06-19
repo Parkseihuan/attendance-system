@@ -364,10 +364,25 @@
     <script>
         // Google Apps Script 웹 앱 URL - 실제 URL로 변경해야 합니다
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFJ3fd-3tCBd_-6zIG4zS4JPm-X-E-hmEMRUhSTP09yjT_OFFcB13_3TXAeNQAWzsYNg/exec';
+        
+        // 또는 Google Form URL을 사용하는 경우
+        const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/YOUR_FORM_ID/formResponse';
+        
+        // Google Form 필드 ID들 (실제 Form에서 확인 필요)
+        const FORM_FIELDS = {
+            name: 'entry.XXXXXXXXX',
+            affiliation: 'entry.XXXXXXXXX',
+            email: 'entry.XXXXXXXXX',
+            phone: 'entry.XXXXXXXXX',
+            location: 'entry.XXXXXXXXX',
+            coordinates: 'entry.XXXXXXXXX',
+            timestamp: 'entry.XXXXXXXXX',
+            deviceId: 'entry.XXXXXXXXX'
+        };
 
         // 허용된 위치 설정 (대학교 세미나실 좌표)
         const ALLOWED_LOCATIONS = [
-        {
+            {
                 name: "단호홀",
                 lat: 37.228848,    // 실제 좌표로 변경 필요
                 lng: 127.167855,   // 실제 좌표로 변경 필요
@@ -645,7 +660,7 @@
 
             // 두 좌표 간의 거리 계산 (미터)
             calculateDistance(lat1, lng1, lat2, lng2) {
-                const R = 6371e3; // 지구 반径 (미터)
+                const R = 6371e3; // 지구 반경 (미터)
                 const φ1 = lat1 * Math.PI/180;
                 const φ2 = lat2 * Math.PI/180;
                 const Δφ = (lat2-lat1) * Math.PI/180;
@@ -680,8 +695,8 @@
                         return;
                     }
 
-                    // 구글 시트에 데이터 제출
-                    await this.submitToGoogleSheets(formData);
+                    // 데이터 제출 (Google Form 또는 Apps Script)
+                    await this.submitData(formData);
 
                     // 성공 처리
                     this.markAsSubmitted();
@@ -721,25 +736,73 @@
                 return true;
             }
 
-            // 구글 폼에 데이터 제출
-            async submitToGoogleForm(formData) {
-                const submitData = new FormData();
+            // 데이터 제출 (Google Form 또는 Apps Script)
+            async submitData(formData) {
+                const submitData = {
+                    name: formData.get('name'),
+                    affiliation: formData.get('affiliation'),
+                    email: formData.get('email') || '',
+                    phone: formData.get('phone') || '',
+                    location: formData.get('location'),
+                    coordinates: formData.get('coordinates') || '',
+                    timestamp: new Date().toLocaleString('ko-KR'),
+                    deviceId: this.deviceFingerprint
+                };
+
+                // 방법 1: Google Apps Script 웹 앱 사용
+                if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
+                    return await this.submitToAppsScript(submitData);
+                }
                 
-                // 구글 폼 필드에 매핑
-                submitData.append(FORM_FIELDS.name, formData.get('name'));
-                submitData.append(FORM_FIELDS.affiliation, formData.get('affiliation'));
-                submitData.append(FORM_FIELDS.email, formData.get('email') || '');
-                submitData.append(FORM_FIELDS.phone, formData.get('phone') || '');
-                submitData.append(FORM_FIELDS.location, formData.get('location'));
-                submitData.append(FORM_FIELDS.coordinates, formData.get('coordinates') || '');
-                submitData.append(FORM_FIELDS.timestamp, new Date().toLocaleString('ko-KR'));
-                submitData.append(FORM_FIELDS.deviceId, this.deviceFingerprint);
+                // 방법 2: Google Form 사용
+                if (GOOGLE_FORM_URL && !GOOGLE_FORM_URL.includes('YOUR_FORM_ID')) {
+                    return await this.submitToGoogleForm(submitData);
+                }
+
+                // 실제 URL이 설정되지 않은 경우 콘솔에만 출력
+                console.log('제출될 데이터:', submitData);
+                console.warn('Google Form 또는 Apps Script URL을 설정해야 합니다.');
+                
+                // 시뮬레이션을 위한 지연
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Google Apps Script로 데이터 제출
+            async submitToAppsScript(data) {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                return await response.json();
+            }
+
+            // Google Form으로 데이터 제출
+            async submitToGoogleForm(data) {
+                const formData = new FormData();
+                
+                // Google Form 필드에 매핑
+                if (FORM_FIELDS.name) formData.append(FORM_FIELDS.name, data.name);
+                if (FORM_FIELDS.affiliation) formData.append(FORM_FIELDS.affiliation, data.affiliation);
+                if (FORM_FIELDS.email) formData.append(FORM_FIELDS.email, data.email);
+                if (FORM_FIELDS.phone) formData.append(FORM_FIELDS.phone, data.phone);
+                if (FORM_FIELDS.location) formData.append(FORM_FIELDS.location, data.location);
+                if (FORM_FIELDS.coordinates) formData.append(FORM_FIELDS.coordinates, data.coordinates);
+                if (FORM_FIELDS.timestamp) formData.append(FORM_FIELDS.timestamp, data.timestamp);
+                if (FORM_FIELDS.deviceId) formData.append(FORM_FIELDS.deviceId, data.deviceId);
 
                 // CORS 우회를 위한 fetch 요청
                 const response = await fetch(GOOGLE_FORM_URL, {
                     method: 'POST',
                     mode: 'no-cors',
-                    body: submitData
+                    body: formData
                 });
 
                 // no-cors 모드에서는 응답을 확인할 수 없으므로 성공으로 간주
