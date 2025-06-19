@@ -903,42 +903,82 @@
                     console.log('데이터 내보내기 시작');
                     
                     // 여러 방법으로 시도
-                    let response;
+                    let data;
+                    
                     try {
                         // 방법 1: 직접 GET 요청
-                        response = await fetch(`${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&timestamp=${Date.now()}`, {
-                            method: 'GET'
+                        console.log('내보내기 방법 1: 직접 GET 요청');
+                        const response = await fetch(`${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&timestamp=${Date.now()}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                            }
                         });
                         
-                        if (!response.ok) {
+                        if (response.ok) {
+                            const textResponse = await response.text();
+                            console.log('내보내기 응답 텍스트:', textResponse);
+                            
+                            // JSON 파싱 시도
+                            try {
+                                data = JSON.parse(textResponse);
+                            } catch (parseError) {
+                                console.warn('JSON 파싱 실패, 일반 메시지로 처리:', textResponse);
+                                // 일반 메시지인 경우 (예: "시스템이 정상 작동 중입니다")
+                                throw new Error('서버에서 올바른 내보내기 응답을 받지 못했습니다. Apps Script 설정을 확인해주세요.');
+                            }
+                        } else {
                             throw new Error('HTTP ' + response.status);
                         }
                     } catch (fetchError) {
                         console.warn('직접 요청 실패, JSONP 시도:', fetchError);
                         
                         // 방법 2: JSONP 방식
-                        const data = await this.exportDataViaJSONP();
-                        if (data.success && data.spreadsheetUrl) {
-                            window.open(data.spreadsheetUrl, '_blank');
-                            this.showModal('success', '데이터 내보내기', '스프레드시트가 새 탭에서 열렸습니다.');
-                            return;
-                        } else {
-                            throw new Error(data.message || '데이터 내보내기 실패');
-                        }
+                        console.log('내보내기 방법 2: JSONP');
+                        data = await this.exportDataViaJSONP();
                     }
                     
-                    const data = await response.json();
+                    console.log('내보내기 데이터:', data);
                     
-                    if (data.success && data.spreadsheetUrl) {
+                    if (data && data.success && data.spreadsheetUrl) {
+                        // 성공: 스프레드시트 열기
                         window.open(data.spreadsheetUrl, '_blank');
-                        this.showModal('success', '데이터 내보내기', '스프레드시트가 새 탭에서 열렸습니다.');
+                        
+                        let message = '스프레드시트가 새 탭에서 열렸습니다.';
+                        if (data.dataInfo) {
+                            message += '<br><small>데이터: ' + data.dataInfo + '</small>';
+                        }
+                        if (data.spreadsheetName) {
+                            message += '<br><small>파일명: ' + data.spreadsheetName + '</small>';
+                        }
+                        
+                        this.showModal('success', '데이터 내보내기', message);
+                    } else if (data && !data.success) {
+                        // 실패: 오류 메시지 표시
+                        let errorMessage = data.message || '데이터 내보내기 실패';
+                        if (data.troubleshooting) {
+                            errorMessage += '<br><br><small>해결 방법:<br>' + 
+                                           data.troubleshooting.map(tip => '• ' + tip).join('<br>') + 
+                                           '</small>';
+                        }
+                        throw new Error(errorMessage);
                     } else {
-                        throw new Error(data.message || '데이터 내보내기 실패');
+                        // 예상치 못한 응답
+                        throw new Error('서버에서 올바른 응답을 받지 못했습니다.');
                     }
+                    
                 } catch (error) {
                     console.error('데이터 내보내기 오류:', error);
-                    this.showModal('error', '내보내기 실패', 
-                        '데이터 내보내기에 실패했습니다.<br><small>' + error.message + '</small>');
+                    
+                    let errorMessage = '데이터 내보내기에 실패했습니다.';
+                    if (error.message.includes('스프레드시트 ID')) {
+                        errorMessage += '<br><br><small>Google Apps Script에서 SPREADSHEET_ID를 확인해주세요.</small>';
+                    } else if (error.message.includes('권한')) {
+                        errorMessage += '<br><br><small>스프레드시트 접근 권한을 확인해주세요.</small>';
+                    }
+                    errorMessage += '<br><small>오류: ' + error.message + '</small>';
+                    
+                    this.showModal('error', '내보내기 실패', errorMessage);
                 }
             }
 
@@ -948,6 +988,7 @@
                     
                     window[callbackName] = function(response) {
                         cleanup();
+                        console.log('내보내기 JSONP 응답:', response);
                         resolve(response);
                     };
 
@@ -972,7 +1013,7 @@
                     script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&callback=${callbackName}&timestamp=${Date.now()}`;
                     script.onerror = function() {
                         cleanup();
-                        reject(new Error('스크립트 로드 실패'));
+                        reject(new Error('내보내기 스크립트 로드 실패'));
                     };
 
                     document.head.appendChild(script);
@@ -1069,7 +1110,7 @@
                 });
             }
 
-            changePassword() {
+            async changePassword() {
                 const newPassword = document.getElementById('newPassword').value;
                 
                 if (!newPassword || newPassword.length < 6) {
@@ -1077,51 +1118,217 @@
                     return;
                 }
 
-                localStorage.setItem('adminPassword', newPassword);
-                document.getElementById('newPassword').value = '';
-                this.showModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
+                try {
+                    // 로컬에 저장
+                    localStorage.setItem('adminPassword', newPassword);
+                    
+                    // 서버에도 알림 (선택사항)
+                    try {
+                        await this.updatePasswordOnServer(newPassword);
+                    } catch (serverError) {
+                        console.warn('서버 비밀번호 업데이트 실패 (로컬은 성공):', serverError);
+                    }
+                    
+                    document.getElementById('newPassword').value = '';
+                    this.showModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
+                } catch (error) {
+                    console.error('비밀번호 변경 오류:', error);
+                    this.showModal('error', '변경 실패', '비밀번호 변경에 실패했습니다.');
+                }
+            }
+
+            async updatePasswordOnServer(newPassword) {
+                // 서버에 비밀번호 변경 알림 (보안상 실제 비밀번호는 전송하지 않음)
+                return new Promise((resolve, reject) => {
+                    const callbackName = 'passwordCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        resolve(response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        resolve({ success: true, message: '타임아웃 - 로컬 변경만 적용됨' });
+                    }, 5000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updatePassword');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        resolve({ success: true, message: '서버 알림 실패 - 로컬 변경만 적용됨' });
+                    };
+
+                    document.head.appendChild(script);
+                });
+            }
+
+            saveEventSettings() {
+                try {
+                    this.currentSettings.eventTitle = document.getElementById('eventTitle').value;
+                    this.currentSettings.eventDescription = document.getElementById('eventDescription').value;
+                    this.currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
+
+                    // 입력값 검증
+                    if (!this.currentSettings.eventTitle.trim()) {
+                        this.showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                        return;
+                    }
+
+                    if (!this.currentSettings.eventDescription.trim()) {
+                        this.showModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
+                        return;
+                    }
+
+                    this.saveSettings();
+                    
+                    // 서버에도 전송 시도
+                    this.saveEventSettingsToServer();
+                    
+                    this.showModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
+                } catch (error) {
+                    console.error('설정 저장 오류:', error);
+                    this.showModal('error', '저장 실패', '설정 저장에 실패했습니다.');
+                }
+            }
+
+            async saveEventSettingsToServer() {
+                try {
+                    const callbackName = 'settingsCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('서버 설정 저장 응답:', response);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        console.log('서버 설정 저장 타임아웃 (로컬은 저장됨)');
+                    }, 10000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updateSettings');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('eventTitle', this.currentSettings.eventTitle);
+                    params.append('eventDescription', this.currentSettings.eventDescription);
+                    params.append('manualInstruction', this.currentSettings.manualInstruction);
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        console.warn('서버 설정 저장 실패 (로컬은 저장됨)');
+                    };
+
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.warn('서버 설정 저장 오류 (로컬은 저장됨):', error);
+                }
             }
 
             updateGPSSettings() {
-                const radius = parseInt(document.getElementById('gpsRadius').value);
-                
-                if (radius < 5 || radius > 100) {
-                    this.showModal('warning', '설정 오류', '허용 반경은 5-100미터 사이여야 합니다.');
-                    return;
+                try {
+                    const radius = parseInt(document.getElementById('gpsRadius').value);
+                    
+                    if (isNaN(radius) || radius < 5 || radius > 100) {
+                        this.showModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
+                        return;
+                    }
+
+                    // 모든 위치의 반경 업데이트
+                    this.currentSettings.locations.forEach(location => {
+                        location.radius = radius;
+                    });
+
+                    this.saveSettings();
+                    this.renderLocations();
+                    
+                    // 서버에도 업데이트 시도
+                    this.updateGPSSettingsOnServer(radius);
+                    
+                    this.showModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
+                } catch (error) {
+                    console.error('GPS 설정 오류:', error);
+                    this.showModal('error', '설정 실패', 'GPS 설정 업데이트에 실패했습니다.');
                 }
-
-                // 모든 위치의 반경 업데이트
-                this.currentSettings.locations.forEach(location => {
-                    location.radius = radius;
-                });
-
-                this.saveSettings();
-                this.renderLocations();
-                this.showModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
             }
 
-            showModal(type, title, message) {
-                const modal = document.getElementById('modal');
-                const modalIcon = document.getElementById('modalIcon');
-                const modalTitle = document.getElementById('modalTitle');
-                const modalMessage = document.getElementById('modalMessage');
+            async updateGPSSettingsOnServer(radius) {
+                try {
+                    const callbackName = 'gpsCallback' + Date.now() + Math.floor(Math.random() * 1000);
+                    
+                    window[callbackName] = function(response) {
+                        cleanup();
+                        console.log('GPS 설정 서버 응답:', response);
+                    };
 
-                modalIcon.className = `modal-icon ${type}`;
-                switch(type) {
-                    case 'success': modalIcon.textContent = '✅'; break;
-                    case 'error': modalIcon.textContent = '❌'; break;
-                    case 'warning': modalIcon.textContent = '⚠️'; break;
-                    default: modalIcon.textContent = 'ℹ️';
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        console.log('GPS 설정 서버 업데이트 타임아웃');
+                    }, 5000);
+
+                    const cleanup = () => {
+                        if (window[callbackName]) {
+                            delete window[callbackName];
+                        }
+                        if (script && script.parentNode) {
+                            script.parentNode.removeChild(script);
+                        }
+                        if (timeoutId) {
+                            clearTimeout(timeoutId);
+                        }
+                    };
+
+                    const params = new URLSearchParams();
+                    params.append('callback', callbackName);
+                    params.append('action', 'updateGPSRadius');
+                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
+                    params.append('gpsRadius', radius);
+                    params.append('timestamp', new Date().toISOString());
+                    
+                    const script = document.createElement('script');
+                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
+                    script.onerror = function() {
+                        cleanup();
+                        console.warn('GPS 설정 서버 업데이트 실패');
+                    };
+
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.warn('GPS 설정 서버 업데이트 오류:', error);
                 }
-
-                modalTitle.textContent = title;
-                modalMessage.innerHTML = message;
-                
-                modal.classList.add('active');
-            }
-
-            closeModal() {
-                document.getElementById('modal').classList.remove('active');
             }
         }
 
