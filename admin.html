@@ -738,7 +738,7 @@
                     
                     // 사용자에게 알림 (너무 자주 뜨지 않도록 조건부)
                     if (!this.lastErrorTime || Date.now() - this.lastErrorTime > 60000) { // 1분에 한 번만
-                        this.showModal('warning', '통계 조회 실패', 
+                        this.displayModal('warning', '통계 조회 실패', 
                             '통계를 가져오는데 실패했습니다. Google Apps Script 설정을 확인해주세요.<br>' +
                             '<small>오류: ' + error.message + '</small>');
                         this.lastErrorTime = Date.now();
@@ -842,15 +842,47 @@
                         console.warn('서버 알림 실패 (무시 가능):', serverError);
                     }
 
-                    this.showModal('success', '초기화 완료', 
+                    // showModal 대신 직접 모달 표시
+                    this.displayModal('success', '초기화 완료', 
                         '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
                         '모든 사용자가 다시 출석 체크할 수 있습니다.<br>' +
                         '<small>삭제된 로컬 기록: ' + removedCount + '개</small>');
                     
                 } catch (error) {
                     console.error('초기화 오류:', error);
-                    this.showModal('error', '초기화 실패', 
+                    this.displayModal('error', '초기화 실패', 
                         '중복 방지 기록 초기화에 실패했습니다.<br><small>' + error.message + '</small>');
+                }
+            }
+
+            displayModal(type, title, message) {
+                try {
+                    const modal = document.getElementById('modal');
+                    const modalIcon = document.getElementById('modalIcon');
+                    const modalTitle = document.getElementById('modalTitle');
+                    const modalMessage = document.getElementById('modalMessage');
+
+                    if (!modal || !modalIcon || !modalTitle || !modalMessage) {
+                        console.error('모달 요소를 찾을 수 없습니다');
+                        alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
+                        return;
+                    }
+
+                    modalIcon.className = 'modal-icon ' + type;
+                    switch(type) {
+                        case 'success': modalIcon.textContent = '✅'; break;
+                        case 'error': modalIcon.textContent = '❌'; break;
+                        case 'warning': modalIcon.textContent = '⚠️'; break;
+                        default: modalIcon.textContent = 'ℹ️';
+                    }
+
+                    modalTitle.textContent = title;
+                    modalMessage.innerHTML = message;
+                    
+                    modal.classList.add('active');
+                } catch (error) {
+                    console.error('모달 표시 오류:', error);
+                    alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
                 }
             }
 
@@ -1332,27 +1364,18 @@
             }
 
             showModal(type, title, message) {
-                const modal = document.getElementById('modal');
-                const modalIcon = document.getElementById('modalIcon');
-                const modalTitle = document.getElementById('modalTitle');
-                const modalMessage = document.getElementById('modalMessage');
-
-                modalIcon.className = 'modal-icon ' + type;
-                switch(type) {
-                    case 'success': modalIcon.textContent = '✅'; break;
-                    case 'error': modalIcon.textContent = '❌'; break;
-                    case 'warning': modalIcon.textContent = '⚠️'; break;
-                    default: modalIcon.textContent = 'ℹ️';
-                }
-
-                modalTitle.textContent = title;
-                modalMessage.innerHTML = message;
-                
-                modal.classList.add('active');
+                this.displayModal(type, title, message);
             }
 
             closeModal() {
-                document.getElementById('modal').classList.remove('active');
+                try {
+                    const modal = document.getElementById('modal');
+                    if (modal) {
+                        modal.classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('모달 닫기 오류:', error);
+                }
             }
         }
 
