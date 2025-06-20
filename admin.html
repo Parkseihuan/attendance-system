@@ -5,10 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>출석 체크 관리자 페이지</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
             min-height: 100vh;
             padding: 10px;
@@ -34,23 +33,6 @@
             padding: 20px;
         }
 
-        .section {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .section h3 {
-            color: #1e293b;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
         .form-group {
             margin-bottom: 15px;
         }
@@ -63,7 +45,7 @@
             font-size: 14px;
         }
 
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group input, .form-group textarea {
             width: 100%;
             padding: 12px 16px;
             border: 2px solid #e5e7eb;
@@ -73,7 +55,7 @@
             box-sizing: border-box;
         }
 
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+        .form-group input:focus, .form-group textarea:focus {
             outline: none;
             border-color: #3b82f6;
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -90,7 +72,7 @@
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            min-height: 44px; /* 모바일 터치 최소 크기 */
+            min-height: 44px;
             line-height: 20px;
         }
 
@@ -99,19 +81,9 @@
             color: white;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
-        }
-
         .btn-danger {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
-        }
-
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
         }
 
         .btn-success {
@@ -119,29 +91,13 @@
             color: white;
         }
 
-        .btn-success:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
-        }
-
         .btn-warning {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             color: white;
         }
 
-        .btn-warning:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
-        }
-
-        .btn:disabled {
-            background: #9ca3af;
-            cursor: not-allowed;
-            transform: none;
-        }
-
         .location-item {
-            background: white;
+            background: #f8fafc;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
             padding: 15px;
@@ -226,24 +182,6 @@
         .modal-icon.error { color: #ef4444; }
         .modal-icon.warning { color: #f59e0b; }
 
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 6px;
-        }
-
-        .status-online { background: #10b981; }
-
-        .sync-status {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 12px;
-        }
-
         .tab-container {
             background: white;
             border-radius: 8px;
@@ -278,33 +216,6 @@
             padding: 20px;
         }
 
-        .backup-section {
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .backup-section h4 {
-            color: #d97706;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .qr-section {
-            text-align: center;
-            padding: 20px;
-            background: #f8fafc;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .qr-code {
-            margin: 15px auto;
-            max-width: 200px;
-        }
-
         /* 모바일 최적화 */
         @media (max-width: 768px) {
             body {
@@ -312,10 +223,6 @@
             }
             
             .admin-content {
-                padding: 15px;
-            }
-            
-            .section {
                 padding: 15px;
             }
             
@@ -339,18 +246,9 @@
                 padding: 20px;
                 margin: 10px;
             }
-            
-            .location-item .grid {
-                grid-template-columns: 1fr !important;
-                gap: 10px !important;
-            }
 
             .admin-header h1 {
                 font-size: 1.5rem;
-            }
-
-            .admin-header p {
-                font-size: 0.9rem;
             }
         }
 
@@ -361,44 +259,6 @@
             
             .stat-number {
                 font-size: 20px;
-            }
-        }
-
-        /* 터치 디바이스 최적화 */
-        @media (hover: none) and (pointer: coarse) {
-            .btn:hover {
-                transform: none;
-                box-shadow: none;
-            }
-            
-            .btn:active {
-                transform: scale(0.98);
-            }
-        }
-
-        /* 다크모드 감지 */
-        @media (prefers-color-scheme: dark) {
-            .section {
-                background: #374151;
-                border-color: #4b5563;
-            }
-            
-            .section h3 {
-                color: #f9fafb;
-                border-bottom-color: #4b5563;
-            }
-            
-            .form-group label {
-                color: #e5e7eb;
-            }
-            
-            .stat-card {
-                background: #374151;
-                border-color: #4b5563;
-            }
-            
-            .stat-number {
-                color: #f9fafb;
             }
         }
     </style>
@@ -424,16 +284,6 @@
             <div class="text-center mt-4 text-sm text-gray-500">
                 <p>기본 비밀번호: <code>admin123</code></p>
             </div>
-
-            <!-- 외부 접속용 백업 데이터 로드 -->
-            <div class="backup-section mt-4">
-                <h4>🔄 데이터 동기화</h4>
-                <p class="text-sm mb-3">다른 기기에서 백업한 데이터를 불러올 수 있습니다.</p>
-                <input type="file" id="backupFileInput" accept=".json" style="display: none;">
-                <button type="button" class="btn btn-warning w-full" onclick="loadBackupData()">
-                    📁 백업 파일 불러오기
-                </button>
-            </div>
         </div>
     </div>
 
@@ -444,13 +294,7 @@
             <div class="admin-header">
                 <h1 class="text-2xl font-bold mb-2">🎓 출석 체크 관리자</h1>
                 <p class="text-base opacity-90">시스템 설정 및 통계 관리</p>
-                <div class="sync-status">
-                    <span class="status-indicator status-online"></span>
-                    <span class="text-xs">시스템 활성화됨</span>
-                    <span id="syncInfo" class="ml-2 text-xs opacity-75">로컬 저장소 사용</span>
-                </div>
                 <div class="mt-3">
-                    <button class="btn btn-warning mr-2" onclick="createBackup()">💾 백업</button>
                     <button class="btn btn-danger" onclick="logout()">로그아웃</button>
                 </div>
             </div>
@@ -463,13 +307,12 @@
                         <button class="tab-button" onclick="switchTab('settings')">⚙️ 설정</button>
                         <button class="tab-button" onclick="switchTab('locations')">📍 위치</button>
                         <button class="tab-button" onclick="switchTab('system')">🔧 시스템</button>
-                        <button class="tab-button" onclick="switchTab('share')">📱 공유</button>
                     </div>
 
                     <!-- 통계 탭 -->
                     <div id="statsTab" class="tab-content">
-                        <h3>📊 실시간 통계</h3>
-                        <div class="stats-grid" id="statsGrid">
+                        <h3 class="text-lg font-bold mb-4">📊 실시간 통계</h3>
+                        <div class="stats-grid">
                             <div class="stat-card">
                                 <div class="stat-number" id="totalAttendees">0</div>
                                 <div class="stat-label">총 참석자</div>
@@ -488,9 +331,8 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4">
                             <button class="btn btn-primary" onclick="refreshStats()">📈 통계 새로고침</button>
-                            <button class="btn btn-success" onclick="exportData()">📥 데이터 내보내기</button>
                         </div>
 
                         <!-- 참석자 목록 미리보기 -->
@@ -502,7 +344,7 @@
 
                     <!-- 설정 탭 -->
                     <div id="settingsTab" class="tab-content" style="display: none;">
-                        <h3>🎪 행사 설정</h3>
+                        <h3 class="text-lg font-bold mb-4">🎪 행사 설정</h3>
                         
                         <div class="form-group">
                             <label for="eventTitle">행사 제목</label>
@@ -529,15 +371,14 @@
                             <input type="number" id="gpsRadius" placeholder="허용 반경" value="30" min="5" max="100">
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 gap-4">
                             <button class="btn btn-success" onclick="saveAllSettings()">💾 모든 설정 저장</button>
-                            <button class="btn btn-primary" onclick="showSettingsCode()">📋 코드 생성</button>
                         </div>
                     </div>
 
                     <!-- 위치 탭 -->
                     <div id="locationsTab" class="tab-content" style="display: none;">
-                        <h3>📍 허용 위치 설정</h3>
+                        <h3 class="text-lg font-bold mb-4">📍 허용 위치 설정</h3>
                         <p class="text-gray-600 mb-4">출석 체크가 가능한 장소를 최대 3곳까지 설정할 수 있습니다.</p>
                         
                         <div id="locationsContainer">
@@ -553,17 +394,17 @@
 
                     <!-- 시스템 탭 -->
                     <div id="systemTab" class="tab-content" style="display: none;">
-                        <h3>⚙️ 시스템 관리</h3>
+                        <h3 class="text-lg font-bold mb-4">⚙️ 시스템 관리</h3>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-white p-4 rounded-lg border">
+                        <div class="grid grid-cols-1 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg border">
                                 <h4 class="font-semibold mb-3">🔄 출석 관리</h4>
                                 <div class="space-y-2">
-                                    <button class="btn btn-danger w-full" onclick="resetDuplicateCheck()">
-                                        🗑️ 중복 방지 초기화
+                                    <button class="btn btn-danger w-full" onclick="resetDuplicateCheckAdvanced()">
+                                        🗑️ 강력한 중복 방지 초기화
                                     </button>
-                                    <button class="btn btn-warning w-full" onclick="removeSampleData()">
-                                        🧪 샘플 데이터 제거
+                                    <button class="btn btn-warning w-full" onclick="resetDuplicateCheck()">
+                                        🔄 일반 중복 방지 초기화
                                     </button>
                                     <button class="btn btn-primary w-full" onclick="checkCurrentStatus()">
                                         🔍 현재 상태 확인
@@ -571,51 +412,14 @@
                                 </div>
                             </div>
                             
-                            <div class="bg-white p-4 rounded-lg border">
+                            <div class="bg-gray-50 p-4 rounded-lg border">
                                 <h4 class="font-semibold mb-3">📊 데이터 관리</h4>
                                 <div class="space-y-2">
-                                    <button class="btn btn-success w-full" onclick="createBackup()">
-                                        💾 백업 생성
-                                    </button>
-                                    <button class="btn btn-warning w-full" onclick="loadBackupData()">
-                                        📁 백업 불러오기
-                                    </button>
                                     <button class="btn btn-danger w-full" onclick="clearAllData()">
                                         🗑️ 모든 데이터 삭제
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 공유 탭 -->
-                    <div id="shareTab" class="tab-content" style="display: none;">
-                        <h3>📱 관리자 페이지 공유</h3>
-                        
-                        <div class="qr-section">
-                            <h4 class="font-semibold mb-3">📱 QR 코드로 공유</h4>
-                            <p class="text-sm text-gray-600 mb-3">
-                                다른 관리자가 이 페이지에 접속할 수 있도록 QR 코드를 생성합니다.
-                            </p>
-                            <div id="qrCodeContainer" class="qr-code"></div>
-                            <button class="btn btn-primary" onclick="generateQRCode()">
-                                📱 QR 코드 생성
-                            </button>
-                        </div>
-
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                            <h4 class="font-semibold text-blue-800 mb-2">📋 현재 페이지 주소</h4>
-                            <input type="text" id="currentURL" readonly class="w-full p-2 text-sm bg-white border rounded" onclick="copyToClipboard(this)">
-                            <p class="text-xs text-blue-600 mt-2">클릭하면 주소가 복사됩니다</p>
-                        </div>
-
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                            <h4 class="font-semibold text-yellow-800 mb-2">⚠️ 보안 주의사항</h4>
-                            <ul class="text-sm text-yellow-700 space-y-1">
-                                <li>• 관리자 비밀번호를 반드시 변경하세요</li>
-                                <li>• 신뢰할 수 있는 사람에게만 공유하세요</li>
-                                <li>• 공용 컴퓨터에서는 로그아웃을 꼭 하세요</li>
-                            </ul>
                         </div>
                     </div>
                 </div>
@@ -633,7 +437,6 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
     <script>
         // 전역 변수
         var CONFIG = {
@@ -656,26 +459,12 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('모바일 호환 관리자 페이지 로드됨');
             setupEventListeners();
             loadSettings();
             renderLocations();
             generateSampleData();
             refreshStatsQuiet();
-            updateCurrentURL();
-            
-            // 모바일 디바이스 감지
-            if (isMobileDevice()) {
-                document.body.classList.add('mobile-device');
-                console.log('모바일 디바이스 감지됨');
-            }
         });
-
-        // 모바일 디바이스 감지
-        function isMobileDevice() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-                   window.innerWidth <= 768;
-        }
 
         // 이벤트 리스너 설정
         function setupEventListeners() {
@@ -684,51 +473,25 @@
                 handleLogin();
             });
 
-            // 파일 입력 이벤트
-            document.getElementById('backupFileInput').addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    loadBackupFromFile(e.target.files[0]);
-                }
-            });
-
-            // 키보드 이벤트
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape') {
                     closeModal();
-                }
-            });
-
-            // 화면 회전 감지
-            window.addEventListener('orientationchange', function() {
-                setTimeout(function() {
-                    refreshStatsQuiet();
-                }, 100);
-            });
-
-            // 브라우저 뒤로가기 방지 (선택사항)
-            window.addEventListener('beforeunload', function(e) {
-                if (document.getElementById('adminPanel').style.display !== 'none') {
-                    e.preventDefault();
-                    e.returnValue = '';
                 }
             });
         }
 
         // 탭 전환
         function switchTab(tabName) {
-            // 모든 탭 버튼 비활성화
             var tabButtons = document.querySelectorAll('.tab-button');
             for (var i = 0; i < tabButtons.length; i++) {
                 tabButtons[i].classList.remove('active');
             }
 
-            // 모든 탭 콘텐츠 숨김
             var tabContents = document.querySelectorAll('.tab-content');
             for (var j = 0; j < tabContents.length; j++) {
                 tabContents[j].style.display = 'none';
             }
 
-            // 선택된 탭 활성화
             var activeButton = document.querySelector('.tab-button[onclick*="' + tabName + '"]');
             if (activeButton) {
                 activeButton.classList.add('active');
@@ -741,12 +504,9 @@
 
             currentTab = tabName;
 
-            // 탭별 특별 처리
             if (tabName === 'stats') {
                 refreshStatsQuiet();
                 updateRecentAttendees();
-            } else if (tabName === 'share') {
-                updateCurrentURL();
             }
         }
 
@@ -761,11 +521,6 @@
                 loadSettings();
                 refreshStats();
                 showModal('success', '로그인 성공', '관리자 페이지에 오신 것을 환영합니다!');
-                
-                // 모바일에서 화면 스크롤 방지
-                if (isMobileDevice()) {
-                    document.body.style.overflow = 'auto';
-                }
             } else {
                 showModal('error', '로그인 실패', '비밀번호가 올바르지 않습니다.');
                 document.getElementById('adminPassword').value = '';
@@ -777,9 +532,6 @@
             document.getElementById('loginScreen').style.display = 'block';
             document.getElementById('adminPanel').style.display = 'none';
             document.getElementById('adminPassword').value = '';
-            
-            // 모바일에서 화면 스크롤 복원
-            document.body.style.overflow = 'auto';
         }
 
         // 설정 불러오기
@@ -795,14 +547,12 @@
                     }
                 }
 
-                // UI 업데이트
                 document.getElementById('eventTitle').value = currentSettings.eventTitle;
                 document.getElementById('eventDescription').value = currentSettings.eventDescription;
                 document.getElementById('manualInstruction').value = currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
                 document.getElementById('gpsRadius').value = currentSettings.locations[0] ? currentSettings.locations[0].radius : 30;
                 
             } catch (e) {
-                console.error('설정 로드 오류:', e);
                 showModal('warning', '설정 로드 실패', '기본 설정을 사용합니다.');
             }
         }
@@ -810,18 +560,15 @@
         // 모든 설정 저장
         function saveAllSettings() {
             try {
-                // 설정값 수집
                 currentSettings.eventTitle = document.getElementById('eventTitle').value;
                 currentSettings.eventDescription = document.getElementById('eventDescription').value;
                 currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
 
-                // 유효성 검사
                 if (!currentSettings.eventTitle.trim()) {
                     showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
                     return;
                 }
 
-                // GPS 설정 업데이트
                 var radius = parseInt(document.getElementById('gpsRadius').value);
                 if (!isNaN(radius) && radius >= 5 && radius <= 100) {
                     for (var i = 0; i < currentSettings.locations.length; i++) {
@@ -829,17 +576,14 @@
                     }
                 }
 
-                // 비밀번호 변경
                 var newPassword = document.getElementById('adminPasswordNew').value;
                 if (newPassword && newPassword.length >= 6) {
                     localStorage.setItem(CONFIG.STORAGE_PREFIX + 'adminPassword', newPassword);
                     document.getElementById('adminPasswordNew').value = '';
                 }
 
-                // 설정 저장
                 localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
                 
-                // 출석체크 페이지용 설정도 저장
                 var configForAttendance = {
                     eventTitle: currentSettings.eventTitle,
                     eventDescription: currentSettings.eventDescription,
@@ -852,8 +596,120 @@
                 showModal('success', '설정 저장 완료', '모든 설정이 성공적으로 저장되었습니다.');
                 
             } catch (e) {
-                console.error('설정 저장 오류:', e);
                 showModal('error', '저장 실패', '설정 저장 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 강력한 중복 방지 초기화 함수
+        function resetDuplicateCheckAdvanced() {
+            if (!confirm('⚠️ 강력한 중복 방지 초기화를 실행하시겠습니까?\n\n모든 중복 방지 관련 데이터를 삭제하여 모든 사용자가 다시 출석체크할 수 있게 됩니다.')) {
+                return;
+            }
+
+            try {
+                var removedCount = 0;
+                var allKeys = Object.keys(localStorage);
+                
+                var suspiciousPatterns = [
+                    'attendance', 'attend', 'present', 'register', 'check',
+                    'user', 'device', 'client', 'browser', 'session',
+                    'submit', 'complete', 'finish', 'done', 'sent',
+                    'verify', 'confirm', 'valid', 'approved',
+                    'duplicate', 'unique', 'once', 'single',
+                    'token', 'hash', 'signature', 'fingerprint',
+                    'time', 'stamp', 'date', 'temp', 'cache'
+                ];
+                
+                var protectedKeys = [
+                    CONFIG.STORAGE_PREFIX + 'settings',
+                    CONFIG.STORAGE_PREFIX + 'adminPassword', 
+                    'attendanceData',
+                    'attendanceConfig'
+                ];
+                
+                for (var i = 0; i < allKeys.length; i++) {
+                    var key = allKeys[i];
+                    var shouldRemove = false;
+                    
+                    if (protectedKeys.indexOf(key) !== -1) {
+                        continue;
+                    }
+                    
+                    if (key.indexOf('attendance_') === 0) {
+                        shouldRemove = true;
+                    }
+                    
+                    var keyLower = key.toLowerCase();
+                    for (var j = 0; j < suspiciousPatterns.length; j++) {
+                        var pattern = suspiciousPatterns[j];
+                        if (keyLower.indexOf(pattern) !== -1) {
+                            var attendanceKeywords = ['attend', 'submit', 'check', 'user', 'device', 'complete', 'verify', 'duplicate'];
+                            for (var k = 0; k < attendanceKeywords.length; k++) {
+                                if (keyLower.indexOf(attendanceKeywords[k]) !== -1) {
+                                    shouldRemove = true;
+                                    break;
+                                }
+                            }
+                            if (shouldRemove) break;
+                        }
+                    }
+                    
+                    if (shouldRemove) {
+                        localStorage.removeItem(key);
+                        removedCount++;
+                    }
+                }
+                
+                sessionStorage.clear();
+                
+                var message = '🚀 강력한 중복 방지 초기화가 완료되었습니다!<br><br>' +
+                             '✅ localStorage에서 삭제된 키: <strong>' + removedCount + '개</strong><br>' +
+                             '✅ sessionStorage 완전 초기화<br><br>' +
+                             '📱 이제 출석체크 페이지를 <strong>새로고침(F5)</strong>하세요!';
+                
+                showModal('success', '강력한 초기화 완료!', message);
+                refreshStatsQuiet();
+                
+            } catch (e) {
+                showModal('error', '초기화 실패', '강력한 중복 방지 초기화 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 일반 중복 방지 초기화
+        function resetDuplicateCheck() {
+            if (!confirm('일반 중복 방지 기록을 초기화하시겠습니까?\n모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
+                return;
+            }
+
+            try {
+                var removedCount = 0;
+                var allKeys = Object.keys(localStorage);
+                var basicPatterns = [
+                    'attendance_submitted', 'userAttended', 'attendanceSubmitted',
+                    'user_attended', 'device_attended', 'attendance_check'
+                ];
+                
+                for (var i = 0; i < allKeys.length; i++) {
+                    var key = allKeys[i];
+                    if ((key.indexOf('attendance_') === 0 || basicPatterns.indexOf(key) !== -1) &&
+                        key !== CONFIG.STORAGE_PREFIX + 'settings' && 
+                        key !== CONFIG.STORAGE_PREFIX + 'adminPassword' &&
+                        key !== 'attendanceData' &&
+                        key !== 'attendanceConfig') {
+                        localStorage.removeItem(key);
+                        removedCount++;
+                    }
+                }
+                
+                sessionStorage.clear();
+                
+                showModal('success', '초기화 완료', 
+                    '중복 방지 초기화가 완료되었습니다.<br>' +
+                    '삭제된 기록: ' + removedCount + '개<br>' +
+                    '📱 출석체크 페이지를 새로고침하세요!');
+                
+            } catch (e) {
+                showModal('error', '초기화 실패', '중복 방지 초기화 중 오류가 발생했습니다.');
             }
         }
 
@@ -978,7 +834,7 @@
                     var errorMessage = '위치를 가져올 수 없습니다.';
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            errorMessage = '위치 접근 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.';
+                            errorMessage = '위치 접근 권한이 거부되었습니다.';
                             break;
                         case error.POSITION_UNAVAILABLE:
                             errorMessage = '위치 정보를 사용할 수 없습니다.';
@@ -1041,7 +897,7 @@
         function updateRecentAttendees() {
             try {
                 var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
-                var recentAttendees = attendees.slice(-5).reverse(); // 최근 5명
+                var recentAttendees = attendees.slice(-5).reverse();
                 var container = document.getElementById('recentAttendees');
                 
                 if (recentAttendees.length === 0) {
@@ -1067,93 +923,73 @@
             }
         }
 
-        // 데이터 관리 함수들
-        function createBackup() {
+        // 시스템 상태 확인
+        function checkCurrentStatus() {
             try {
-                var backupData = {
-                    settings: currentSettings,
-                    attendanceData: JSON.parse(localStorage.getItem('attendanceData') || '[]'),
-                    adminPassword: localStorage.getItem(CONFIG.STORAGE_PREFIX + 'adminPassword') || CONFIG.ADMIN_PASSWORD,
-                    exportDate: new Date().toISOString(),
-                    version: '2.0'
-                };
-
-                var dataStr = JSON.stringify(backupData, null, 2);
-                var dataBlob = new Blob([dataStr], { type: 'application/json' });
-                var url = URL.createObjectURL(dataBlob);
+                var statusInfo = [];
+                var allLocalKeys = Object.keys(localStorage);
+                var sessionKeys = Object.keys(sessionStorage);
                 
-                var link = document.createElement('a');
-                link.href = url;
-                link.download = 'attendance_backup_' + new Date().toISOString().split('T')[0] + '.json';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-
-                showModal('success', '백업 생성 완료', '백업 파일이 성공적으로 다운로드되었습니다.');
+                var attendanceData = localStorage.getItem('attendanceData');
+                var attendeeCount = 0;
+                if (attendanceData) {
+                    var parsed = JSON.parse(attendanceData);
+                    attendeeCount = parsed.length;
+                }
+                
+                statusInfo.push('👥 총 참석자: ' + attendeeCount + '명');
+                statusInfo.push('📦 localStorage 키: ' + allLocalKeys.length + '개');
+                statusInfo.push('💾 sessionStorage 키: ' + sessionKeys.length + '개');
+                
+                var duplicateKeys = [];
+                
+                for (var i = 0; i < allLocalKeys.length; i++) {
+                    var key = allLocalKeys[i];
+                    if (key.indexOf('attendance_') === 0 || 
+                        key.indexOf('user_') === 0 || 
+                        key.indexOf('device_') === 0 ||
+                        key.indexOf('submit') !== -1 ||
+                        key.indexOf('duplicate') !== -1 ||
+                        key.indexOf('check') !== -1) {
+                        if (key !== CONFIG.STORAGE_PREFIX + 'settings' && 
+                            key !== CONFIG.STORAGE_PREFIX + 'adminPassword' &&
+                            key !== 'attendanceData' &&
+                            key !== 'attendanceConfig') {
+                            duplicateKeys.push(key);
+                        }
+                    }
+                }
+                
+                statusInfo.push('🔒 중복방지 키: ' + duplicateKeys.length + '개');
+                
+                if (duplicateKeys.length > 0) {
+                    statusInfo.push('');
+                    statusInfo.push('⚠️ 발견된 중복방지 키들:');
+                    for (var j = 0; j < Math.min(duplicateKeys.length, 5); j++) {
+                        statusInfo.push('  • ' + duplicateKeys[j]);
+                    }
+                    if (duplicateKeys.length > 5) {
+                        statusInfo.push('  • ... 및 ' + (duplicateKeys.length - 5) + '개 더');
+                    }
+                    statusInfo.push('');
+                    statusInfo.push('🔧 권장: 중복방지 초기화 실행');
+                } else {
+                    statusInfo.push('✅ 모든 기기에서 출석체크 가능');
+                }
+                
+                if (sessionKeys.length > 0) {
+                    statusInfo.push('⚠️ sessionStorage에 ' + sessionKeys.length + '개 키 존재');
+                }
+                
+                var message = statusInfo.join('<br>');
+                showModal('success', '현재 상태 보고서', message);
                 
             } catch (e) {
-                console.error('백업 생성 오류:', e);
-                showModal('error', '백업 실패', '백업 생성 중 오류가 발생했습니다.');
+                showModal('error', '상태 확인 실패', '시스템 상태를 확인할 수 없습니다.');
             }
         }
 
-        function loadBackupData() {
-            document.getElementById('backupFileInput').click();
-        }
-
-        function loadBackupFromFile(file) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    var backupData = JSON.parse(e.target.result);
-                    
-                    // 데이터 유효성 검사
-                    if (!backupData.settings || !backupData.attendanceData) {
-                        throw new Error('잘못된 백업 파일 형식입니다.');
-                    }
-
-                    // 확인 대화상자
-                    if (!confirm('백업 데이터를 불러오시겠습니까?\n현재 데이터가 덮어씌워집니다.')) {
-                        return;
-                    }
-
-                    // 설정 복원
-                    currentSettings = backupData.settings;
-                    localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
-                    
-                    // 출석 데이터 복원
-                    localStorage.setItem('attendanceData', JSON.stringify(backupData.attendanceData));
-                    
-                    // 관리자 비밀번호 복원 (선택사항)
-                    if (backupData.adminPassword && confirm('관리자 비밀번호도 복원하시겠습니까?')) {
-                        localStorage.setItem(CONFIG.STORAGE_PREFIX + 'adminPassword', backupData.adminPassword);
-                    }
-
-                    // UI 업데이트
-                    loadSettings();
-                    renderLocations();
-                    refreshStatsQuiet();
-                    updateRecentAttendees();
-
-                    var message = '백업 데이터가 성공적으로 복원되었습니다.<br>' +
-                                 '백업 날짜: ' + (backupData.exportDate ? new Date(backupData.exportDate).toLocaleString('ko-KR') : '알 수 없음') + '<br>' +
-                                 '참석자 수: ' + (backupData.attendanceData ? backupData.attendanceData.length : 0) + '명';
-                    
-                    showModal('success', '백업 복원 완료', message);
-                    
-                } catch (e) {
-                    console.error('백업 로드 오류:', e);
-                    showModal('error', '백업 로드 실패', '백업 파일을 읽을 수 없습니다.<br>파일이 손상되었거나 올바른 형식이 아닙니다.');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function exportData() {
-            createBackup(); // 백업과 동일한 기능
-        }
-
+        // 모든 데이터 삭제
         function clearAllData() {
             if (!confirm('정말로 모든 출석 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
                 return;
@@ -1165,11 +1001,15 @@
             }
 
             try {
-                // 출석 데이터 삭제
+                var beforeCount = 0;
+                var attendanceData = localStorage.getItem('attendanceData');
+                if (attendanceData) {
+                    beforeCount = JSON.parse(attendanceData).length;
+                }
+
                 localStorage.removeItem('attendanceData');
                 localStorage.setItem('attendanceData', JSON.stringify([]));
                 
-                // 중복 방지 기록 삭제
                 var keys = Object.keys(localStorage);
                 var removedCount = 0;
                 for (var i = 0; i < keys.length; i++) {
@@ -1181,203 +1021,18 @@
                     }
                 }
 
-                // sessionStorage 초기화
                 sessionStorage.clear();
-
-                // 통계 업데이트
                 refreshStatsQuiet();
                 updateRecentAttendees();
 
                 showModal('success', '삭제 완료', 
-                    '모든 출석 데이터가 삭제되었습니다.<br>삭제된 중복 방지 기록: ' + removedCount + '개');
+                    '모든 출석 데이터가 삭제되었습니다.<br>' +
+                    '삭제된 참석자: ' + beforeCount + '명<br>' +
+                    '삭제된 중복 방지 기록: ' + removedCount + '개');
                 
             } catch (e) {
-                console.error('데이터 삭제 오류:', e);
                 showModal('error', '삭제 실패', '데이터 삭제 중 오류가 발생했습니다.');
             }
-        }
-
-        // 시스템 관리 함수들
-        function resetDuplicateCheck() {
-            if (!confirm('정말로 중복 방지 기록을 초기화하시겠습니까?\n모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
-                return;
-            }
-
-            try {
-                var removedCount = 0;
-                var removedKeys = [];
-                
-                // localStorage에서 중복 방지 관련 키 삭제
-                var allKeys = Object.keys(localStorage);
-                var duplicateKeys = [
-                    'attendance_submitted', 'userAttended', 'attendanceSubmitted',
-                    'lastAttendanceTime', 'attendanceComplete', 'checkSubmitted',
-                    'user_attended', 'device_attended', 'attendance_check',
-                    'attendanceHash', 'userFingerprint', 'deviceFingerprint',
-                    'attendance_token', 'submit_token', 'user_token',
-                    'attendance_timestamp', 'duplicate_check', 'form_submitted'
-                ];
-                
-                for (var i = 0; i < allKeys.length; i++) {
-                    var key = allKeys[i];
-                    if ((key.indexOf('attendance_') === 0 || duplicateKeys.indexOf(key) !== -1) &&
-                        key !== CONFIG.STORAGE_PREFIX + 'settings' && 
-                        key !== CONFIG.STORAGE_PREFIX + 'adminPassword' &&
-                        key !== 'attendanceData' &&
-                        key !== 'attendanceConfig') {
-                        localStorage.removeItem(key);
-                        removedKeys.push(key);
-                        removedCount++;
-                    }
-                }
-                
-                // sessionStorage 완전 초기화
-                sessionStorage.clear();
-                
-                var message = '강력한 중복 방지 초기화가 완료되었습니다!<br><br>' +
-                             '✅ 삭제된 기록: ' + removedCount + '개<br>' +
-                             '✅ sessionStorage 초기화<br><br>' +
-                             '📱 이제 출석체크 페이지를 새로고침하세요!';
-                
-                showModal('success', '초기화 완료', message);
-                
-            } catch (e) {
-                console.error('중복 방지 초기화 오류:', e);
-                showModal('error', '초기화 실패', '중복 방지 초기화 중 오류가 발생했습니다.');
-            }
-        }
-
-        function removeSampleData() {
-            if (confirm('샘플 데이터를 제거하고 실제 운영 모드로 전환하시겠습니까?')) {
-                localStorage.setItem('attendanceData', JSON.stringify([]));
-                refreshStatsQuiet();
-                updateRecentAttendees();
-                showModal('success', '샘플 데이터 제거', '샘플 데이터가 제거되었습니다.<br>이제 실제 출석체크부터 시작됩니다.');
-            }
-        }
-
-        function checkCurrentStatus() {
-            try {
-                var statusInfo = [];
-                var keys = Object.keys(localStorage);
-                var sessionKeys = Object.keys(sessionStorage);
-                
-                // 출석 데이터 확인
-                var attendanceData = localStorage.getItem('attendanceData');
-                var attendeeCount = 0;
-                if (attendanceData) {
-                    var parsed = JSON.parse(attendanceData);
-                    attendeeCount = parsed.length;
-                }
-                
-                statusInfo.push('👥 총 참석자: ' + attendeeCount + '명');
-                statusInfo.push('📦 localStorage 키: ' + keys.length + '개');
-                statusInfo.push('💾 sessionStorage 키: ' + sessionKeys.length + '개');
-                
-                // 중복 방지 키 확인
-                var duplicateKeys = [];
-                for (var i = 0; i < keys.length; i++) {
-                    if (keys[i].indexOf('attendance_') === 0 && 
-                        keys[i] !== CONFIG.STORAGE_PREFIX + 'settings' && 
-                        keys[i] !== CONFIG.STORAGE_PREFIX + 'adminPassword') {
-                        duplicateKeys.push(keys[i]);
-                    }
-                }
-                statusInfo.push('🔒 중복방지 키: ' + duplicateKeys.length + '개');
-                
-                if (duplicateKeys.length > 0) {
-                    statusInfo.push('🔧 권장: 중복방지 초기화 실행');
-                } else {
-                    statusInfo.push('✅ 모든 기기에서 출석체크 가능');
-                }
-                
-                var message = statusInfo.join('<br>');
-                showModal('success', '현재 상태', message);
-                
-            } catch (e) {
-                console.error('상태 확인 오류:', e);
-                showModal('error', '상태 확인 실패', '시스템 상태를 확인할 수 없습니다.');
-            }
-        }
-
-        // 공유 관련 함수들
-        function updateCurrentURL() {
-            var urlInput = document.getElementById('currentURL');
-            if (urlInput) {
-                urlInput.value = window.location.href;
-            }
-        }
-
-        function copyToClipboard(element) {
-            element.select();
-            element.setSelectionRange(0, 99999); // 모바일 지원
-            
-            try {
-                document.execCommand('copy');
-                showModal('success', '복사 완료', 'URL이 클립보드에 복사되었습니다.');
-            } catch (e) {
-                // Fallback for mobile devices
-                if (navigator.share) {
-                    navigator.share({
-                        title: '출석체크 관리자 페이지',
-                        url: element.value
-                    });
-                } else {
-                    showModal('warning', '복사 실패', 'URL을 수동으로 복사해주세요.');
-                }
-            }
-        }
-
-        function generateQRCode() {
-            var container = document.getElementById('qrCodeContainer');
-            container.innerHTML = '';
-            
-            try {
-                var canvas = document.createElement('canvas');
-                QRCode.toCanvas(canvas, window.location.href, {
-                    width: 200,
-                    margin: 2,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    }
-                }, function (error) {
-                    if (error) {
-                        console.error('QR 코드 생성 오류:', error);
-                        container.innerHTML = '<p class="text-red-500">QR 코드 생성에 실패했습니다.</p>';
-                    } else {
-                        container.appendChild(canvas);
-                        container.innerHTML += '<p class="text-sm text-gray-600 mt-2">QR 코드를 스캔하여 관리자 페이지에 접속하세요</p>';
-                    }
-                });
-            } catch (e) {
-                console.error('QR 코드 라이브러리 오류:', e);
-                container.innerHTML = '<p class="text-red-500">QR 코드 라이브러리를 불러올 수 없습니다.</p>';
-            }
-        }
-
-        function showSettingsCode() {
-            var settingsCode = 
-                '<div style="text-align: left; font-family: monospace; background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0; font-size: 12px; overflow-x: auto;">' +
-                '<strong>📋 출석체크 페이지 설정 적용 코드:</strong><br><br>' +
-                
-                '<div style="background: #2d3748; color: #e2e8f0; padding: 10px; border-radius: 4px; overflow-x: auto;">' +
-                'localStorage.setItem(\'attendanceConfig\', JSON.stringify({<br>' +
-                '&nbsp;&nbsp;eventTitle: \'' + currentSettings.eventTitle.replace(/'/g, "\\'") + '\',<br>' +
-                '&nbsp;&nbsp;eventDescription: \'' + currentSettings.eventDescription.replace(/'/g, "\\'") + '\',<br>' +
-                '&nbsp;&nbsp;manualInstruction: \'' + currentSettings.manualInstruction.replace(/'/g, "\\'") + '\',<br>' +
-                '&nbsp;&nbsp;allowedLocations: ' + JSON.stringify(currentSettings.locations) + '<br>' +
-                '}));<br>' +
-                'location.reload();' +
-                '</div><br>' +
-                
-                '<strong>사용법:</strong><br>' +
-                '1. 출석체크 페이지에서 F12 → Console<br>' +
-                '2. 위 코드를 붙여넣고 Enter<br>' +
-                '3. 페이지 새로고침 확인' +
-                '</div>';
-            
-            showModal('success', '설정 적용 코드', settingsCode);
         }
 
         // 샘플 데이터 생성
@@ -1388,7 +1043,7 @@
                         name: '김철수',
                         organization: '컴퓨터공학과',
                         phone: '010-1234-5678',
-                        timestamp: new Date(Date.now() - 3600000).toISOString(), // 1시간 전
+                        timestamp: new Date(Date.now() - 3600000).toISOString(),
                         location: '단호홀',
                         deviceId: 'device_001'
                     },
@@ -1396,7 +1051,7 @@
                         name: '이영희',
                         organization: '전자공학과',
                         phone: '010-2345-6789',
-                        timestamp: new Date(Date.now() - 1800000).toISOString(), // 30분 전
+                        timestamp: new Date(Date.now() - 1800000).toISOString(),
                         location: '벡소홀',
                         deviceId: 'device_002'
                     },
@@ -1404,13 +1059,12 @@
                         name: '박민수',
                         organization: '기계공학과',
                         phone: '010-3456-7890',
-                        timestamp: new Date().toISOString(), // 지금
+                        timestamp: new Date().toISOString(),
                         location: '대학교 본관',
                         deviceId: 'device_003'
                     }
                 ];
                 localStorage.setItem('attendanceData', JSON.stringify(sampleData));
-                console.log('샘플 데이터 생성됨');
             }
         }
 
@@ -1433,13 +1087,12 @@
             modalMessage.innerHTML = message;
             modal.classList.add('active');
 
-            // 자동 닫기 (에러가 아닌 경우)
             if (type !== 'error') {
                 setTimeout(function() {
                     if (modal.classList.contains('active')) {
                         closeModal();
                     }
-                }, 4000);
+                }, 3000);
             }
         }
 
@@ -1447,128 +1100,8 @@
             document.getElementById('modal').classList.remove('active');
         }
 
-        // 유틸리티 함수들
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            var k = 1024;
-            var sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            var i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function validateLocation(location) {
-            return location && 
-                   location.name && 
-                   typeof location.lat === 'number' && 
-                   typeof location.lng === 'number' && 
-                   typeof location.radius === 'number' &&
-                   location.lat >= -90 && location.lat <= 90 &&
-                   location.lng >= -180 && location.lng <= 180 &&
-                   location.radius >= 5 && location.radius <= 100;
-        }
-
-        // 네트워크 상태 감지 (모바일에서 유용)
-        function checkNetworkStatus() {
-            if (navigator.onLine) {
-                document.getElementById('syncInfo').textContent = '온라인 - 로컬 저장소 사용';
-                document.getElementById('syncInfo').style.color = '#10b981';
-            } else {
-                document.getElementById('syncInfo').textContent = '오프라인 - 로컬 저장소만 사용';
-                document.getElementById('syncInfo').style.color = '#f59e0b';
-            }
-        }
-
-        // 네트워크 상태 변화 감지
-        window.addEventListener('online', checkNetworkStatus);
-        window.addEventListener('offline', checkNetworkStatus);
-
-        // 페이지 가시성 변화 감지 (모바일에서 앱 전환시)
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && document.getElementById('adminPanel').style.display !== 'none') {
-                refreshStatsQuiet();
-                checkNetworkStatus();
-            }
-        });
-
-        // 터치 이벤트 개선 (모바일)
-        document.addEventListener('touchstart', function() {}, { passive: true });
-        document.addEventListener('touchmove', function(e) {
-            // 모달이 열려있을 때 배경 스크롤 방지
-            if (document.getElementById('modal').classList.contains('active')) {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // 초기 네트워크 상태 확인
-        setTimeout(function() {
-            checkNetworkStatus();
-        }, 1000);
-
-        // PWA 지원을 위한 서비스 워커 등록 (선택사항)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                // 서비스 워커가 있는 경우에만 등록
-                console.log('PWA 지원 가능');
-            });
-        }
-
-        // 화면 방향 변경 대응
-        window.addEventListener('resize', function() {
-            if (currentTab === 'stats') {
-                setTimeout(function() {
-                    refreshStatsQuiet();
-                }, 200);
-            }
-        });
-
-        // 개발자 도구 감지 (보안 강화)
-        var devtools = {
-            open: false,
-            orientation: null
-        };
-        
-        setInterval(function() {
-            if (window.outerHeight - window.innerHeight > 200 || window.outerWidth - window.innerWidth > 200) {
-                if (!devtools.open) {
-                    devtools.open = true;
-                    console.log('관리자 도구가 감지되었습니다.');
-                }
-            } else {
-                devtools.open = false;
-            }
-        }, 500);
-
-        // 브라우저별 호환성 체크
-        function checkBrowserCompatibility() {
-            var issues = [];
-            
-            if (!localStorage) {
-                issues.push('로컬 저장소 미지원');
-            }
-            
-            if (!navigator.geolocation) {
-                issues.push('위치 서비스 미지원');
-            }
-            
-            if (!window.FileReader) {
-                issues.push('파일 읽기 미지원');
-            }
-            
-            if (issues.length > 0) {
-                console.warn('브라우저 호환성 문제:', issues);
-                showModal('warning', '브라우저 호환성', 
-                    '일부 기능이 제한될 수 있습니다:<br>• ' + issues.join('<br>• '));
-            }
-        }
-
-        // 페이지 로드 완료 후 호환성 체크
-        setTimeout(function() {
-            checkBrowserCompatibility();
-        }, 2000);
-
-        console.log('모바일 호환 출석체크 관리자 시스템 준비 완료');
-        console.log('버전: 2.0 (모바일 최적화)');
-        console.log('지원 기능: 백업/복원, QR코드, 터치 최적화, 오프라인 지원');
+        console.log('경량화된 출석체크 관리자 시스템 준비 완료');
+        console.log('버전: 2.2 (경량화)');
     </script>
 </body>
 </html>
