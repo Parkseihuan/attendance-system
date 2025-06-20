@@ -691,18 +691,66 @@
                 return;
             }
 
+            console.log('중복 방지 초기화 시작');
+            
+            // 1. localStorage에서 attendance_ 로 시작하는 모든 키 삭제
             var keys = Object.keys(localStorage);
             var removedCount = 0;
+            var removedKeys = [];
             
             for (var i = 0; i < keys.length; i++) {
                 if (keys[i].indexOf('attendance_') === 0) {
+                    console.log('삭제할 키:', keys[i]);
                     localStorage.removeItem(keys[i]);
+                    removedKeys.push(keys[i]);
                     removedCount++;
                 }
             }
 
+            // 2. sessionStorage 전체 초기화
             sessionStorage.clear();
-            showModal('success', '초기화 완료', '중복 방지 기록이 초기화되었습니다.\n삭제된 기록: ' + removedCount + '개');
+            console.log('sessionStorage 초기화 완료');
+
+            // 3. 중복 체크용 기타 키들도 삭제
+            var duplicateCheckKeys = [
+                'lastAttendanceTime',
+                'attendanceSubmitted',
+                'userFingerprint',
+                'deviceFingerprint',
+                'attendanceHash'
+            ];
+
+            for (var j = 0; j < duplicateCheckKeys.length; j++) {
+                if (localStorage.getItem(duplicateCheckKeys[j])) {
+                    localStorage.removeItem(duplicateCheckKeys[j]);
+                    removedKeys.push(duplicateCheckKeys[j]);
+                    removedCount++;
+                    console.log('추가 삭제된 키:', duplicateCheckKeys[j]);
+                }
+            }
+
+            // 4. 쿠키도 삭제 (중복 방지용)
+            var cookiesToDelete = ['attendance_check', 'user_attended', 'device_id'];
+            for (var k = 0; k < cookiesToDelete.length; k++) {
+                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                console.log('쿠키 삭제:', cookiesToDelete[k]);
+            }
+
+            console.log('초기화 완료 - 총 ' + removedCount + '개 항목 삭제');
+            console.log('삭제된 키들:', removedKeys);
+
+            // 5. 통계 즉시 업데이트
+            refreshStatsQuiet();
+
+            var message = '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
+                         '삭제된 기록: ' + removedCount + '개<br>' +
+                         '모든 사용자가 다시 출석 체크할 수 있습니다.';
+            
+            if (removedKeys.length > 0) {
+                message += '<br><small>삭제된 항목: ' + removedKeys.join(', ') + '</small>';
+            }
+
+            showModal('success', '초기화 완료', message);
         }
 
         // 데이터 내보내기
@@ -739,18 +787,47 @@
                 return;
             }
 
+            console.log('모든 데이터 삭제 시작');
+
+            // 1. 출석 데이터 삭제
             localStorage.removeItem('attendanceData');
             localStorage.removeItem('attendanceConfig');
+            console.log('출석 데이터 삭제 완료');
             
+            // 2. 중복 방지 기록 삭제
             var keys = Object.keys(localStorage);
+            var removedCount = 0;
             for (var i = 0; i < keys.length; i++) {
                 if (keys[i].indexOf('attendance_') === 0) {
                     localStorage.removeItem(keys[i]);
+                    removedCount++;
                 }
             }
 
-            refreshStats();
-            showModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
+            // 3. 추가 중복 체크 키들 삭제
+            var extraKeys = ['lastAttendanceTime', 'attendanceSubmitted', 'userFingerprint', 'deviceFingerprint', 'attendanceHash'];
+            for (var j = 0; j < extraKeys.length; j++) {
+                if (localStorage.getItem(extraKeys[j])) {
+                    localStorage.removeItem(extraKeys[j]);
+                    removedCount++;
+                }
+            }
+
+            // 4. sessionStorage 초기화
+            sessionStorage.clear();
+
+            // 5. 쿠키 삭제
+            var cookiesToDelete = ['attendance_check', 'user_attended', 'device_id'];
+            for (var k = 0; k < cookiesToDelete.length; k++) {
+                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            }
+
+            console.log('모든 데이터 삭제 완료 - ' + removedCount + '개 중복 방지 기록 삭제');
+
+            // 6. 통계 즉시 업데이트
+            refreshStatsQuiet();
+
+            showModal('success', '삭제 완료', '모든 출석 데이터와 중복 방지 기록이 삭제되었습니다.<br>삭제된 중복 방지 기록: ' + removedCount + '개');
         }
 
         // 비밀번호 변경
