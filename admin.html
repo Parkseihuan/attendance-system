@@ -710,10 +710,16 @@
                     
                     // 통계 표시
                     if (data && typeof data === 'object') {
+                        console.log('통계 데이터 상세:', data);
+                        
                         // 기본값으로 안전하게 표시
-                        document.getElementById('totalAttendees').textContent = data.totalAttendees || '0';
-                        document.getElementById('uniqueDevices').textContent = data.uniqueDevices || '0';
-                        document.getElementById('duplicateCount').textContent = data.duplicates || data.duplicateCount || '0';
+                        const totalAttendees = data.totalAttendees || data.dataRows || 0;
+                        const uniqueDevices = data.uniqueDevices || data.uniqueNames || totalAttendees;
+                        const duplicates = data.duplicates || data.duplicateCount || 0;
+                        
+                        document.getElementById('totalAttendees').textContent = totalAttendees;
+                        document.getElementById('uniqueDevices').textContent = uniqueDevices;
+                        document.getElementById('duplicateCount').textContent = duplicates;
                         
                         const lastUpdate = data.lastUpdate || data.timestamp;
                         if (lastUpdate) {
@@ -727,7 +733,28 @@
                             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
                         }
                         
-                        console.log('통계 업데이트 성공:', data);
+                        // 추가 정보 표시
+                        if (data.message) {
+                            console.log('통계 메시지:', data.message);
+                        }
+                        
+                        // 설정 상태 확인
+                        if (data.spreadsheetConfigured === false) {
+                            console.warn('스프레드시트가 설정되지 않음');
+                            this.displayModal('warning', '설정 필요', 
+                                'Google Apps Script에서 SPREADSHEET_ID를 설정해주세요.<br>' +
+                                '<small>현재 모든 통계가 0으로 표시됩니다.</small>');
+                        } else if (data.sheetExists === false) {
+                            console.warn('데이터 시트가 존재하지 않음');
+                        } else if (data.hasData === false) {
+                            console.log('출석 데이터가 아직 없음');
+                        }
+                        
+                        console.log('통계 업데이트 성공:', {
+                            totalAttendees: totalAttendees,
+                            uniqueDevices: uniqueDevices,
+                            duplicates: duplicates
+                        });
                     } else {
                         throw new Error('통계 데이터 형식이 올바르지 않습니다.');
                     }
