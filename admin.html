@@ -131,11 +131,6 @@
             margin-bottom: 15px;
         }
 
-        .location-item.active {
-            border-color: #10b981;
-            background: #f0fdf4;
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -221,52 +216,6 @@
         }
 
         .status-online { background: #10b981; }
-        .status-offline { background: #ef4444; }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #3b82f6;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
 
         @media (max-width: 768px) {
             .admin-content {
@@ -327,19 +276,19 @@
                     <h3>📊 실시간 통계</h3>
                     <div class="stats-grid" id="statsGrid">
                         <div class="stat-card">
-                            <div class="stat-number" id="totalAttendees">-</div>
+                            <div class="stat-number" id="totalAttendees">0</div>
                             <div class="stat-label">총 참석자</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="uniqueDevices">-</div>
+                            <div class="stat-number" id="uniqueDevices">0</div>
                             <div class="stat-label">고유 기기</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="duplicateCount">-</div>
+                            <div class="stat-number" id="duplicateCount">0</div>
                             <div class="stat-label">중복 시도</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-number" id="lastUpdate">-</div>
+                            <div class="stat-number" id="lastUpdate">방금 전</div>
                             <div class="stat-label">마지막 업데이트</div>
                         </div>
                     </div>
@@ -351,17 +300,17 @@
                     <h3>🎪 행사 설정</h3>
                     <div class="form-group">
                         <label for="eventTitle">행사 제목</label>
-                        <input type="text" id="eventTitle" placeholder="예: 2024 겨울 세미나">
+                        <input type="text" id="eventTitle" placeholder="예: 2024 겨울 세미나" value="🎓 세미나실 출석 체크">
                     </div>
                     
                     <div class="form-group">
                         <label for="eventDescription">행사 설명</label>
-                        <input type="text" id="eventDescription" placeholder="예: 행사 참석 확인을 위해 정보를 입력해 주세요">
+                        <input type="text" id="eventDescription" placeholder="예: 행사 참석 확인을 위해 정보를 입력해 주세요" value="행사 참석 확인을 위해 정보를 입력해 주세요">
                     </div>
                     
                     <div class="form-group">
                         <label for="manualInstruction">수동 참석 안내 문구</label>
-                        <textarea id="manualInstruction" rows="3" placeholder="휴대폰 사용이 어려우신 경우 안내 문구"></textarea>
+                        <textarea id="manualInstruction" rows="3" placeholder="휴대폰 사용이 어려우신 경우 안내 문구">행사장 앞쪽에 비치된 '참석자 명부'에 직접 기재해 주시기 바랍니다.</textarea>
                     </div>
                     
                     <button class="btn btn-success" onclick="saveEventSettings()">💾 행사 설정 저장</button>
@@ -451,1032 +400,463 @@
     </div>
 
     <script>
-        // 설정
-        const CONFIG = {
-            ADMIN_PASSWORD: 'admin123', // 기본 비밀번호
-            GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyHR3TluFeGtUxZt7qGm37gsSJ3sw0y4GWtiPHeQbNlkOc1ycS1vTrOLW9AHdEjaObc8Q/exec'
+        // 전역 변수
+        var CONFIG = {
+            ADMIN_PASSWORD: 'admin123'
         };
 
-        class AdminSystem {
-            constructor() {
-                this.currentSettings = {
-                    eventTitle: '🎓 세미나실 출석 체크',
-                    eventDescription: '행사 참석 확인을 위해 정보를 입력해 주세요',
-                    manualInstruction: '행사장 앞쪽에 비치된 <strong>\'참석자 명부\'</strong>에 직접 기재해 주시기 바랍니다.',
-                    locations: [
-                        { name: '단호홀', lat: 37.228848, lng: 127.167855, radius: 30 },
-                        { name: '벽소홀', lat: 37.228767, lng: 127.167449, radius: 30 },
-                        { name: '대학교 본관', lat: 37.227239, lng: 127.166598, radius: 30 }
-                    ]
-                };
-                this.init();
-            }
-
-            init() {
-                this.loadSettings();
-                this.setupEventListeners();
-                this.renderLocations();
-                this.refreshStats();
-            }
-
-            setupEventListeners() {
-                document.getElementById('loginForm').addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleLogin();
-                });
-            }
-
-            handleLogin() {
-                const password = document.getElementById('adminPassword').value;
-                const savedPassword = localStorage.getItem('adminPassword') || CONFIG.ADMIN_PASSWORD;
-                
-                if (password === savedPassword) {
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('adminPanel').style.display = 'block';
-                    this.loadSettings();
-                    this.refreshStats();
-                } else {
-                    this.showModal('error', '로그인 실패', '비밀번호가 올바르지 않습니다.');
-                }
-            }
-
-            logout() {
-                document.getElementById('loginScreen').style.display = 'block';
-                document.getElementById('adminPanel').style.display = 'none';
-                document.getElementById('adminPassword').value = '';
-            }
-
-            loadSettings() {
-                // 로컬 스토리지에서 설정 불러오기
-                const savedSettings = localStorage.getItem('attendanceSettings');
-                if (savedSettings) {
-                    this.currentSettings = { ...this.currentSettings, ...JSON.parse(savedSettings) };
-                }
-
-                // UI에 설정 적용
-                document.getElementById('eventTitle').value = this.currentSettings.eventTitle;
-                document.getElementById('eventDescription').value = this.currentSettings.eventDescription;
-                document.getElementById('manualInstruction').value = this.currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
-                document.getElementById('gpsRadius').value = this.currentSettings.locations[0]?.radius || 30;
-            }
-
-            saveEventSettings() {
-                this.currentSettings.eventTitle = document.getElementById('eventTitle').value;
-                this.currentSettings.eventDescription = document.getElementById('eventDescription').value;
-                this.currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
-
-                this.saveSettings();
-                this.showModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
-            }
-
-            renderLocations() {
-                const container = document.getElementById('locationsContainer');
-                container.innerHTML = '';
-
-                this.currentSettings.locations.forEach((location, index) => {
-                    const locationDiv = document.createElement('div');
-                    locationDiv.className = 'location-item';
-                    locationDiv.innerHTML = `
-                        <div class="flex justify-between items-start mb-3">
-                            <h4 class="font-semibold text-lg">위치 ${index + 1}</h4>
-                            <button class="btn btn-danger btn-sm" onclick="adminSystem.removeLocation(${index})">삭제</button>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">장소명</label>
-                                <input type="text" value="${location.name}" 
-                                       onchange="adminSystem.updateLocation(${index}, 'name', this.value)"
-                                       class="w-full p-2 border rounded">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">허용 반경 (미터)</label>
-                                <input type="number" value="${location.radius}" min="5" max="100"
-                                       onchange="adminSystem.updateLocation(${index}, 'radius', this.value)"
-                                       class="w-full p-2 border rounded">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">위도 (Latitude)</label>
-                                <input type="number" step="0.000001" value="${location.lat}"
-                                       onchange="adminSystem.updateLocation(${index}, 'lat', this.value)"
-                                       class="w-full p-2 border rounded">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">경도 (Longitude)</label>
-                                <input type="number" step="0.000001" value="${location.lng}"
-                                       onchange="adminSystem.updateLocation(${index}, 'lng', this.value)"
-                                       class="w-full p-2 border rounded">
-                            </div>
-                        </div>
-                        <div class="mt-2 text-sm text-gray-600">
-                            <a href="https://www.google.com/maps?q=${location.lat},${location.lng}" target="_blank" 
-               class="text-blue-600 hover:underline">📍 Google Maps에서 확인</a>
-                        </div>
-                    `;
-                    container.appendChild(locationDiv);
-                });
-
-                // 위치 추가 버튼
-                if (this.currentSettings.locations.length < 3) {
-                    const addButton = document.createElement('div');
-                    addButton.innerHTML = `
-                        <button class="btn btn-primary w-full" onclick="adminSystem.addLocation()">
-                            ➕ 새 위치 추가
-                        </button>
-                    `;
-                    container.appendChild(addButton);
-                }
-            }
-
-            addLocation() {
-                if (this.currentSettings.locations.length < 3) {
-                    this.currentSettings.locations.push({
-                        name: `새 장소 ${this.currentSettings.locations.length + 1}`,
-                        lat: 37.5665,
-                        lng: 126.9780,
-                        radius: 30
-                    });
-                    this.renderLocations();
-                }
-            }
-
-            removeLocation(index) {
-                if (this.currentSettings.locations.length > 1) {
-                    this.currentSettings.locations.splice(index, 1);
-                    this.renderLocations();
-                } else {
-                    this.showModal('warning', '삭제 불가', '최소 1개의 위치는 설정되어야 합니다.');
-                }
-            }
-
-            updateLocation(index, field, value) {
-                if (field === 'lat' || field === 'lng') {
-                    this.currentSettings.locations[index][field] = parseFloat(value);
-                } else if (field === 'radius') {
-                    this.currentSettings.locations[index][field] = parseInt(value);
-                } else {
-                    this.currentSettings.locations[index][field] = value;
-                }
-            }
-
-            async getCurrentLocation() {
-                try {
-                    const position = await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(resolve, reject, {
-                            enableHighAccuracy: true,
-                            timeout: 10000,
-                            maximumAge: 60000
-                        });
-                    });
-
-                    const { latitude, longitude } = position.coords;
-                    
-                    // 첫 번째 위치에 현재 위치 설정
-                    if (this.currentSettings.locations.length > 0) {
-                        this.currentSettings.locations[0].lat = latitude;
-                        this.currentSettings.locations[0].lng = longitude;
-                        this.currentSettings.locations[0].name = '현재 위치';
-                        this.renderLocations();
-                        this.showModal('success', '위치 가져오기 성공', 
-                            `현재 위치가 설정되었습니다.<br>위도: ${latitude.toFixed(6)}<br>경도: ${longitude.toFixed(6)}`);
-                    }
-                } catch (error) {
-                    this.showModal('error', '위치 가져오기 실패', 
-                        'GPS 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
-                }
-            }
-
-            saveLocations() {
-                this.saveSettings();
-                this.showModal('success', '저장 완료', '위치 설정이 성공적으로 저장되었습니다.');
-            }
-
-            saveSettings() {
-                localStorage.setItem('attendanceSettings', JSON.stringify(this.currentSettings));
-                
-                // 실제 출석 체크 페이지의 설정도 업데이트 (localStorage 공유)
-                const configForAttendance = {
-                    eventTitle: this.currentSettings.eventTitle,
-                    eventDescription: this.currentSettings.eventDescription,
-                    manualInstruction: this.currentSettings.manualInstruction,
-                    allowedLocations: this.currentSettings.locations
-                };
-                
-                localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
-            }
-
-            async refreshStats() {
-                try {
-                    document.getElementById('totalAttendees').textContent = '로딩...';
-                    document.getElementById('uniqueDevices').textContent = '로딩...';
-                    document.getElementById('duplicateCount').textContent = '로딩...';
-                    document.getElementById('lastUpdate').textContent = '로딩...';
-                    
-                    // 여러 방법으로 통계 가져오기 시도
-                    let data = null;
-                    
-                    // 방법 1: GET 파라미터로 요청
-                    try {
-                        console.log('통계 요청 시도 1: GET 파라미터');
-                        const url = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getStats&timestamp=${Date.now()}`;
-                        console.log('요청 URL:', url);
-                        
-                        const response = await fetch(url, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const textResponse = await response.text();
-                            console.log('응답 텍스트:', textResponse);
-                            data = JSON.parse(textResponse);
-                        }
-                    } catch (error1) {
-                        console.warn('방법 1 실패:', error1);
-                        
-                        // 방법 2: JSONP 방식으로 시도
-                        try {
-                            console.log('통계 요청 시도 2: JSONP');
-                            data = await this.getStatsViaJSONP();
-                        } catch (error2) {
-                            console.warn('방법 2 실패:', error2);
-                            
-                            // 방법 3: 직접 스프레드시트 통계 계산 (기본 통계)
-                            console.log('통계 요청 시도 3: 기본 통계');
-                            data = this.getBasicStats();
-                        }
-                    }
-                    
-                    // 통계 표시
-                    if (data && typeof data === 'object') {
-                        console.log('통계 데이터 상세:', data);
-                        
-                        // 기본값으로 안전하게 표시
-                        const totalAttendees = data.totalAttendees || data.dataRows || 0;
-                        const uniqueDevices = data.uniqueDevices || data.uniqueNames || totalAttendees;
-                        const duplicates = data.duplicates || data.duplicateCount || 0;
-                        
-                        document.getElementById('totalAttendees').textContent = totalAttendees;
-                        document.getElementById('uniqueDevices').textContent = uniqueDevices;
-                        document.getElementById('duplicateCount').textContent = duplicates;
-                        
-                        const lastUpdate = data.lastUpdate || data.timestamp;
-                        if (lastUpdate) {
-                            try {
-                                const updateTime = new Date(lastUpdate).toLocaleString('ko-KR');
-                                document.getElementById('lastUpdate').textContent = updateTime;
-                            } catch (dateError) {
-                                document.getElementById('lastUpdate').textContent = '방금 전';
-                            }
-                        } else {
-                            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
-                        }
-                        
-                        // 추가 정보 표시
-                        if (data.message) {
-                            console.log('통계 메시지:', data.message);
-                        }
-                        
-                        // 설정 상태 확인
-                        if (data.spreadsheetConfigured === false) {
-                            console.warn('스프레드시트가 설정되지 않음');
-                            this.displayModal('warning', '설정 필요', 
-                                'Google Apps Script에서 SPREADSHEET_ID를 설정해주세요.<br>' +
-                                '<small>현재 모든 통계가 0으로 표시됩니다.</small>');
-                        } else if (data.sheetExists === false) {
-                            console.warn('데이터 시트가 존재하지 않음');
-                        } else if (data.hasData === false) {
-                            console.log('출석 데이터가 아직 없음');
-                        }
-                        
-                        console.log('통계 업데이트 성공:', {
-                            totalAttendees: totalAttendees,
-                            uniqueDevices: uniqueDevices,
-                            duplicates: duplicates
-                        });
-                    } else {
-                        throw new Error('통계 데이터 형식이 올바르지 않습니다.');
-                    }
-                    
-                } catch (error) {
-                    console.error('통계 조회 최종 실패:', error);
-                    
-                    // 오류 시 기본값 표시
-                    document.getElementById('totalAttendees').textContent = '오류';
-                    document.getElementById('uniqueDevices').textContent = '오류';
-                    document.getElementById('duplicateCount').textContent = '오류';
-                    document.getElementById('lastUpdate').textContent = '조회 실패';
-                    
-                    // 사용자에게 알림 (너무 자주 뜨지 않도록 조건부)
-                    if (!this.lastErrorTime || Date.now() - this.lastErrorTime > 60000) { // 1분에 한 번만
-                        this.displayModal('warning', '통계 조회 실패', 
-                            '통계를 가져오는데 실패했습니다. Google Apps Script 설정을 확인해주세요.<br>' +
-                            '<small>오류: ' + error.message + '</small>');
-                        this.lastErrorTime = Date.now();
-                    }
-                }
-            }
-
-            async getStatsViaJSONP() {
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'statsCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    // 전역 콜백 함수 등록
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        console.log('JSONP 통계 응답:', response);
-                        resolve(response);
-                    };
-
-                    // 타임아웃 설정
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        reject(new Error('JSONP 통계 요청 타임아웃'));
-                    }, 10000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    // 스크립트 태그 생성
-                    const script = document.createElement('script');
-                    script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?action=getStats&callback=${callbackName}&timestamp=${Date.now()}`;
-                    script.onerror = function() {
-                        cleanup();
-                        reject(new Error('JSONP 스크립트 로드 실패'));
-                    };
-
-                    document.head.appendChild(script);
-                });
-            }
-
-            getBasicStats() {
-                // 로컬 스토리지에서 기본 통계 계산
-                const keys = Object.keys(localStorage);
-                const attendanceKeys = keys.filter(key => key.startsWith('attendance_'));
-                
-                return {
-                    success: true,
-                    totalAttendees: attendanceKeys.length,
-                    uniqueDevices: attendanceKeys.length,
-                    duplicates: 0,
-                    lastUpdate: new Date().toISOString(),
-                    source: 'local_estimation'
-                };
-            }
-
-            async resetDuplicateCheck() {
-                if (!confirm('정말로 중복 방지 기록을 초기화하시겠습니까? 모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
-                    return;
-                }
-
-                try {
-                    console.log('중복 방지 초기화 시작');
-                    
-                    // 1단계: 로컬 스토리지의 중복 방지 기록 삭제
-                    const keys = Object.keys(localStorage);
-                    let removedCount = 0;
-                    
-                    keys.forEach(key => {
-                        if (key.startsWith('attendance_')) {
-                            localStorage.removeItem(key);
-                            removedCount++;
-                        }
-                    });
-
-                    // 2단계: 세션 스토리지도 초기화
-                    sessionStorage.clear();
-
-                    // 3단계: 쿠키도 삭제
-                    document.cookie.split(";").forEach(cookie => {
-                        const eqPos = cookie.indexOf("=");
-                        const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
-                        if (name.trim().startsWith('attendance_')) {
-                            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-                        }
-                    });
-
-                    console.log('로컬 중복 방지 초기화 완료:', removedCount + '개 항목 삭제');
-
-                    // 4단계: 서버에 초기화 알림 (선택사항)
-                    try {
-                        await this.notifyServerReset();
-                    } catch (serverError) {
-                        console.warn('서버 알림 실패 (무시 가능):', serverError);
-                    }
-
-                    // showModal 대신 직접 모달 표시
-                    this.displayModal('success', '초기화 완료', 
-                        '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
-                        '모든 사용자가 다시 출석 체크할 수 있습니다.<br>' +
-                        '<small>삭제된 로컬 기록: ' + removedCount + '개</small>');
-                    
-                } catch (error) {
-                    console.error('초기화 오류:', error);
-                    this.displayModal('error', '초기화 실패', 
-                        '중복 방지 기록 초기화에 실패했습니다.<br><small>' + error.message + '</small>');
-                }
-            }
-
-            displayModal(type, title, message) {
-                try {
-                    console.log('모달 표시 시도:', type, title);
-                    
-                    const modal = document.getElementById('modal');
-                    const modalIcon = document.getElementById('modalIcon');
-                    const modalTitle = document.getElementById('modalTitle');
-                    const modalMessage = document.getElementById('modalMessage');
-
-                    if (!modal) {
-                        console.error('모달 요소(#modal)를 찾을 수 없습니다');
-                        alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
-                        return;
-                    }
-
-                    if (!modalIcon || !modalTitle || !modalMessage) {
-                        console.error('모달 하위 요소를 찾을 수 없습니다');
-                        alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
-                        return;
-                    }
-
-                    modalIcon.className = 'modal-icon ' + type;
-                    switch(type) {
-                        case 'success': modalIcon.textContent = '✅'; break;
-                        case 'error': modalIcon.textContent = '❌'; break;
-                        case 'warning': modalIcon.textContent = '⚠️'; break;
-                        default: modalIcon.textContent = 'ℹ️';
-                    }
-
-                    modalTitle.textContent = title;
-                    modalMessage.innerHTML = message;
-                    
-                    modal.classList.add('active');
-                    console.log('모달 표시 완료');
-                } catch (error) {
-                    console.error('모달 표시 오류:', error);
-                    console.error('오류 스택:', error.stack);
-                    // 최후의 수단으로 alert 사용
-                    alert(title + ': ' + message.replace(/<[^>]*>/g, ''));
-                }
-            }
-
-            async notifyServerReset() {
-                // 서버에 초기화 알림 (로그 목적)
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'resetCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        resolve(response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        resolve({ success: true, message: '타임아웃 - 무시됨' }); // 오류로 처리하지 않음
-                    }, 5000); // 짧은 타임아웃
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('action', 'notifyReset');
-                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
-                    params.append('timestamp', new Date().toISOString());
-                    
-                    const script = document.createElement('script');
-                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
-                    script.onerror = function() {
-                        cleanup();
-                        resolve({ success: true, message: '서버 알림 실패 - 무시됨' });
-                    };
-
-                    document.head.appendChild(script);
-                });
-            }
-
-            async exportData() {
-                try {
-                    console.log('데이터 내보내기 시작');
-                    
-                    // 여러 방법으로 시도
-                    let data;
-                    
-                    try {
-                        // 방법 1: 직접 GET 요청
-                        console.log('내보내기 방법 1: 직접 GET 요청');
-                        const response = await fetch(`${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&timestamp=${Date.now()}`, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const textResponse = await response.text();
-                            console.log('내보내기 응답 텍스트:', textResponse);
-                            
-                            // JSON 파싱 시도
-                            try {
-                                data = JSON.parse(textResponse);
-                            } catch (parseError) {
-                                console.warn('JSON 파싱 실패, 일반 메시지로 처리:', textResponse);
-                                // 일반 메시지인 경우 (예: "시스템이 정상 작동 중입니다")
-                                throw new Error('서버에서 올바른 내보내기 응답을 받지 못했습니다. Apps Script 설정을 확인해주세요.');
-                            }
-                        } else {
-                            throw new Error('HTTP ' + response.status);
-                        }
-                    } catch (fetchError) {
-                        console.warn('직접 요청 실패, JSONP 시도:', fetchError);
-                        
-                        // 방법 2: JSONP 방식
-                        console.log('내보내기 방법 2: JSONP');
-                        data = await this.exportDataViaJSONP();
-                    }
-                    
-                    console.log('내보내기 데이터:', data);
-                    
-                    if (data && data.success && data.spreadsheetUrl) {
-                        // 성공: 스프레드시트 열기
-                        window.open(data.spreadsheetUrl, '_blank');
-                        
-                        let message = '스프레드시트가 새 탭에서 열렸습니다.';
-                        if (data.dataInfo) {
-                            message += '<br><small>데이터: ' + data.dataInfo + '</small>';
-                        }
-                        if (data.spreadsheetName) {
-                            message += '<br><small>파일명: ' + data.spreadsheetName + '</small>';
-                        }
-                        
-                        this.showModal('success', '데이터 내보내기', message);
-                    } else if (data && !data.success) {
-                        // 실패: 오류 메시지 표시
-                        let errorMessage = data.message || '데이터 내보내기 실패';
-                        if (data.troubleshooting) {
-                            errorMessage += '<br><br><small>해결 방법:<br>' + 
-                                           data.troubleshooting.map(tip => '• ' + tip).join('<br>') + 
-                                           '</small>';
-                        }
-                        throw new Error(errorMessage);
-                    } else {
-                        // 예상치 못한 응답
-                        throw new Error('서버에서 올바른 응답을 받지 못했습니다.');
-                    }
-                    
-                } catch (error) {
-                    console.error('데이터 내보내기 오류:', error);
-                    
-                    let errorMessage = '데이터 내보내기에 실패했습니다.';
-                    if (error.message.includes('스프레드시트 ID')) {
-                        errorMessage += '<br><br><small>Google Apps Script에서 SPREADSHEET_ID를 확인해주세요.</small>';
-                    } else if (error.message.includes('권한')) {
-                        errorMessage += '<br><br><small>스프레드시트 접근 권한을 확인해주세요.</small>';
-                    }
-                    errorMessage += '<br><small>오류: ' + error.message + '</small>';
-                    
-                    this.showModal('error', '내보내기 실패', errorMessage);
-                }
-            }
-
-            async exportDataViaJSONP() {
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'exportCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        console.log('내보내기 JSONP 응답:', response);
-                        resolve(response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        reject(new Error('내보내기 요청 타임아웃'));
-                    }, 15000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const script = document.createElement('script');
-                    script.src = `${CONFIG.GOOGLE_SCRIPT_URL}?action=exportData&callback=${callbackName}&timestamp=${Date.now()}`;
-                    script.onerror = function() {
-                        cleanup();
-                        reject(new Error('내보내기 스크립트 로드 실패'));
-                    };
-
-                    document.head.appendChild(script);
-                });
-            }
-
-            async clearAllData() {
-                if (!confirm('정말로 모든 출석 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                    return;
-                }
-
-                const confirmText = prompt('정말로 삭제하시겠습니까? "DELETE"를 입력하세요:');
-                if (confirmText !== 'DELETE') {
-                    return;
-                }
-
-                try {
-                    console.log('모든 데이터 삭제 시작');
-                    
-                    // JSONP 방식으로 삭제 요청
-                    const data = await this.clearAllDataViaJSONP();
-                    
-                    if (data.success) {
-                        this.displayModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
-                        // 통계 새로고침
-                        setTimeout(() => {
-                            this.refreshStats();
-                        }, 2000);
-                    } else {
-                        throw new Error(data.message || '데이터 삭제 실패');
-                    }
-                } catch (error) {
-                    console.error('데이터 삭제 오류:', error);
-                    this.displayModal('error', '삭제 실패', 
-                        '데이터 삭제에 실패했습니다.<br><small>' + error.message + '</small>');
-                }
-            }
-
-            async clearAllDataViaJSONP() {
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'clearDataCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    // 전역 콜백 함수 등록
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        console.log('데이터 삭제 JSONP 응답:', response);
-                        resolve(response);
-                    };
-
-                    // 타임아웃 설정
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        reject(new Error('데이터 삭제 요청 타임아웃'));
-                    }, 15000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    // 삭제 요청 데이터
-                    const requestData = {
-                        action: 'clearAllData',
-                        adminPassword: localStorage.getItem('adminPassword') || 'admin123',
-                        timestamp: new Date().toISOString()
-                    };
-
-                    // URL 파라미터 생성 (GET 방식으로 전송)
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('action', 'clearAllData');
-                    params.append('adminPassword', requestData.adminPassword);
-                    params.append('timestamp', requestData.timestamp);
-                    
-                    const fullUrl = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
-                    console.log('데이터 삭제 JSONP 요청 URL:', fullUrl);
-
-                    // 스크립트 태그 생성
-                    const script = document.createElement('script');
-                    script.src = fullUrl;
-                    script.onerror = function() {
-                        cleanup();
-                        reject(new Error('데이터 삭제 스크립트 로드 실패'));
-                    };
-
-                    document.head.appendChild(script);
-                });
-            }
-
-            async changePassword() {
-                const newPassword = document.getElementById('newPassword').value;
-                
-                if (!newPassword || newPassword.length < 6) {
-                    this.displayModal('warning', '비밀번호 오류', '비밀번호는 6자 이상이어야 합니다.');
-                    return;
-                }
-
-                try {
-                    // 로컬에 저장
-                    localStorage.setItem('adminPassword', newPassword);
-                    
-                    // 서버에도 알림 (선택사항)
-                    try {
-                        await this.updatePasswordOnServer(newPassword);
-                    } catch (serverError) {
-                        console.warn('서버 비밀번호 업데이트 실패 (로컬은 성공):', serverError);
-                    }
-                    
-                    document.getElementById('newPassword').value = '';
-                    this.displayModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
-                } catch (error) {
-                    console.error('비밀번호 변경 오류:', error);
-                    this.displayModal('error', '변경 실패', '비밀번호 변경에 실패했습니다.');
-                }
-            }
-
-            async updatePasswordOnServer(newPassword) {
-                // 서버에 비밀번호 변경 알림 (보안상 실제 비밀번호는 전송하지 않음)
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'passwordCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        resolve(response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        resolve({ success: true, message: '타임아웃 - 로컬 변경만 적용됨' });
-                    }, 5000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('action', 'updatePassword');
-                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
-                    params.append('timestamp', new Date().toISOString());
-                    
-                    const script = document.createElement('script');
-                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
-                    script.onerror = function() {
-                        cleanup();
-                        resolve({ success: true, message: '서버 알림 실패 - 로컬 변경만 적용됨' });
-                    };
-
-                    document.head.appendChild(script);
-                });
-            }
-
-            saveEventSettings() {
-                try {
-                    this.currentSettings.eventTitle = document.getElementById('eventTitle').value;
-                    this.currentSettings.eventDescription = document.getElementById('eventDescription').value;
-                    this.currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
-
-                    // 입력값 검증
-                    if (!this.currentSettings.eventTitle.trim()) {
-                        this.displayModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
-                        return;
-                    }
-
-                    if (!this.currentSettings.eventDescription.trim()) {
-                        this.displayModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
-                        return;
-                    }
-
-                    this.saveSettings();
-                    
-                    // 서버에도 전송 시도
-                    this.saveEventSettingsToServer();
-                    
-                    this.displayModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
-                } catch (error) {
-                    console.error('설정 저장 오류:', error);
-                    this.displayModal('error', '저장 실패', '설정 저장에 실패했습니다.');
-                }
-            }
-
-            async saveEventSettingsToServer() {
-                try {
-                    const callbackName = 'settingsCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        console.log('서버 설정 저장 성공:', response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        console.log('서버 설정 저장 타임아웃 (로컬 저장은 완료됨)');
-                    }, 10000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('action', 'updateSettings');
-                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
-                    params.append('eventTitle', this.currentSettings.eventTitle);
-                    params.append('eventDescription', this.currentSettings.eventDescription);
-                    params.append('manualInstruction', this.currentSettings.manualInstruction);
-                    params.append('timestamp', new Date().toISOString());
-                    
-                    const script = document.createElement('script');
-                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
-                    script.onerror = function() {
-                        cleanup();
-                        console.log('서버 설정 저장을 시도했으나 실패 (로컬 저장은 완료됨)');
-                    };
-
-                    document.head.appendChild(script);
-                } catch (error) {
-                    console.log('서버 설정 저장을 시도했으나 실패 (로컬 저장은 완료됨):', error.message);
-                }
-            }
-
-            updateGPSSettings() {
-                try {
-                    const radius = parseInt(document.getElementById('gpsRadius').value);
-                    
-                    if (isNaN(radius) || radius < 5 || radius > 100) {
-                        this.displayModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
-                        return;
-                    }
-
-                    // 모든 위치의 반경 업데이트
-                    this.currentSettings.locations.forEach(location => {
-                        location.radius = radius;
-                    });
-
-                    this.saveSettings();
-                    this.renderLocations();
-                    
-                    // 서버에도 업데이트 시도
-                    this.updateGPSSettingsOnServer(radius);
-                    
-                    this.displayModal('success', '설정 저장', `GPS 허용 반경이 ${radius}미터로 설정되었습니다.`);
-                } catch (error) {
-                    console.error('GPS 설정 오류:', error);
-                    this.displayModal('error', '설정 실패', 'GPS 설정 업데이트에 실패했습니다.');
-                }
-            }
-
-            async             updateGPSSettingsOnServer(radius) {
-                try {
-                    const callbackName = 'gpsCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    window[callbackName] = function(response) {
-                        cleanup();
-                        console.log('GPS 설정 서버 응답:', response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        cleanup();
-                        console.log('GPS 설정 서버 업데이트 타임아웃');
-                    }, 5000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('action', 'updateGPSRadius');
-                    params.append('adminPassword', localStorage.getItem('adminPassword') || 'admin123');
-                    params.append('gpsRadius', radius);
-                    params.append('timestamp', new Date().toISOString());
-                    
-                    const script = document.createElement('script');
-                    script.src = CONFIG.GOOGLE_SCRIPT_URL + '?' + params.toString();
-                    script.onerror = function() {
-                        cleanup();
-                        console.warn('GPS 설정 서버 업데이트 실패');
-                    };
-
-                    document.head.appendChild(script);
-                } catch (error) {
-                    console.warn('GPS 설정 서버 업데이트 오류:', error);
-                }
-            }
-
-            showModal(type, title, message) {
-                this.displayModal(type, title, message);
-            }
-
-            closeModal() {
-                try {
-                    const modal = document.getElementById('modal');
-                    if (modal) {
-                        modal.classList.remove('active');
-                    }
-                } catch (error) {
-                    console.error('모달 닫기 오류:', error);
-                }
-            }
-        }
-
-        // 전역 함수들
-        function logout() {
-            adminSystem.logout();
-        }
-
-        function closeModal() {
-            adminSystem.closeModal();
-        }
-
-        function refreshStats() {
-            adminSystem.refreshStats();
-        }
-
-        function saveEventSettings() {
-            adminSystem.saveEventSettings();
-        }
-
-        function saveLocations() {
-            adminSystem.saveLocations();
-        }
-
-        function getCurrentLocation() {
-            adminSystem.getCurrentLocation();
-        }
-
-        function resetDuplicateCheck() {
-            adminSystem.resetDuplicateCheck();
-        }
-
-        function exportData() {
-            adminSystem.exportData();
-        }
-
-        function clearAllData() {
-            adminSystem.clearAllData();
-        }
-
-        function changePassword() {
-            adminSystem.changePassword();
-        }
-
-        function updateGPSSettings() {
-            adminSystem.updateGPSSettings();
-        }
-
-        // 시스템 초기화
-        let adminSystem;
-        document.addEventListener('DOMContentLoaded', () => {
-            adminSystem = new AdminSystem();
+        var currentSettings = {
+            eventTitle: '🎓 세미나실 출석 체크',
+            eventDescription: '행사 참석 확인을 위해 정보를 입력해 주세요',
+            manualInstruction: '행사장 앞쪽에 비치된 \'참석자 명부\'에 직접 기재해 주시기 바랍니다.',
+            locations: [
+                { name: '단호홀', lat: 37.228848, lng: 127.167855, radius: 30 },
+                { name: '벡소홀', lat: 37.228767, lng: 127.167449, radius: 30 },
+                { name: '대학교 본관', lat: 37.227239, lng: 127.166598, radius: 30 }
+            ]
+        };
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            setupEventListeners();
+            renderLocations();
+            generateSampleData();
+            refreshStats();
         });
 
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+                if (event.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+                    handleLogin();
+                }
+            });
+        }
+
+        // 로그인 처리
+        function handleLogin() {
+            var password = document.getElementById('adminPassword').value;
+            var savedPassword = localStorage.getItem('adminPassword') || CONFIG.ADMIN_PASSWORD;
+            
+            if (password === savedPassword) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadSettings();
+                refreshStats();
+            } else {
+                showModal('error', '로그인 실패', '비밀번호가 올바르지 않습니다.');
+            }
+        }
+
+        // 로그아웃
+        function logout() {
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        // 설정 불러오기
+        function loadSettings() {
+            var savedSettings = localStorage.getItem('attendanceSettings');
+            if (savedSettings) {
+                var parsedSettings = JSON.parse(savedSettings);
+                for (var key in parsedSettings) {
+                    if (parsedSettings.hasOwnProperty(key)) {
+                        currentSettings[key] = parsedSettings[key];
+                    }
+                }
+            }
+
+            document.getElementById('eventTitle').value = currentSettings.eventTitle;
+            document.getElementById('eventDescription').value = currentSettings.eventDescription;
+            document.getElementById('manualInstruction').value = currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
+            document.getElementById('gpsRadius').value = currentSettings.locations[0] ? currentSettings.locations[0].radius : 30;
+        }
+
+        // 설정 저장
+        function saveSettings() {
+            localStorage.setItem('attendanceSettings', JSON.stringify(currentSettings));
+            
+            var configForAttendance = {
+                eventTitle: currentSettings.eventTitle,
+                eventDescription: currentSettings.eventDescription,
+                manualInstruction: currentSettings.manualInstruction,
+                allowedLocations: currentSettings.locations
+            };
+            
+            localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
+        }
+
+        // 행사 설정 저장
+        function saveEventSettings() {
+            currentSettings.eventTitle = document.getElementById('eventTitle').value;
+            currentSettings.eventDescription = document.getElementById('eventDescription').value;
+            currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
+
+            if (!currentSettings.eventTitle.trim()) {
+                showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                return;
+            }
+
+            saveSettings();
+            showModal('success', '저장 완료', '행사 설정이 성공적으로 저장되었습니다.');
+        }
+
+        // 위치 렌더링
+        function renderLocations() {
+            var container = document.getElementById('locationsContainer');
+            container.innerHTML = '';
+
+            for (var i = 0; i < currentSettings.locations.length; i++) {
+                var location = currentSettings.locations[i];
+                var locationDiv = document.createElement('div');
+                locationDiv.className = 'location-item';
+                locationDiv.innerHTML = 
+                    '<div class="flex justify-between items-start mb-3">' +
+                        '<h4 class="font-semibold text-lg">위치 ' + (i + 1) + '</h4>' +
+                        '<button class="btn btn-danger btn-sm" onclick="removeLocation(' + i + ')">삭제</button>' +
+                    '</div>' +
+                    '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
+                        '<div>' +
+                            '<label class="block text-sm font-medium mb-1">장소명</label>' +
+                            '<input type="text" value="' + location.name + '" ' +
+                                   'onchange="updateLocation(' + i + ', \'name\', this.value)" ' +
+                                   'class="w-full p-2 border rounded">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label class="block text-sm font-medium mb-1">허용 반경 (미터)</label>' +
+                            '<input type="number" value="' + location.radius + '" min="5" max="100" ' +
+                                   'onchange="updateLocation(' + i + ', \'radius\', this.value)" ' +
+                                   'class="w-full p-2 border rounded">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label class="block text-sm font-medium mb-1">위도 (Latitude)</label>' +
+                            '<input type="number" step="0.000001" value="' + location.lat + '" ' +
+                                   'onchange="updateLocation(' + i + ', \'lat\', this.value)" ' +
+                                   'class="w-full p-2 border rounded">' +
+                        '</div>' +
+                        '<div>' +
+                            '<label class="block text-sm font-medium mb-1">경도 (Longitude)</label>' +
+                            '<input type="number" step="0.000001" value="' + location.lng + '" ' +
+                                   'onchange="updateLocation(' + i + ', \'lng\', this.value)" ' +
+                                   'class="w-full p-2 border rounded">' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mt-2 text-sm text-gray-600">' +
+                        '<a href="https://www.google.com/maps?q=' + location.lat + ',' + location.lng + '" target="_blank" ' +
+                           'class="text-blue-600 hover:underline">📍 Google Maps에서 확인</a>' +
+                    '</div>';
+                container.appendChild(locationDiv);
+            }
+
+            if (currentSettings.locations.length < 3) {
+                var addButton = document.createElement('div');
+                addButton.innerHTML = 
+                    '<button class="btn btn-primary w-full" onclick="addLocation()">' +
+                        '➕ 새 위치 추가' +
+                    '</button>';
+                container.appendChild(addButton);
+            }
+        }
+
+        // 위치 추가
+        function addLocation() {
+            if (currentSettings.locations.length < 3) {
+                currentSettings.locations.push({
+                    name: '새 장소 ' + (currentSettings.locations.length + 1),
+                    lat: 37.5665,
+                    lng: 126.9780,
+                    radius: 30
+                });
+                renderLocations();
+            }
+        }
+
+        // 위치 제거
+        function removeLocation(index) {
+            if (currentSettings.locations.length > 1) {
+                currentSettings.locations.splice(index, 1);
+                renderLocations();
+            } else {
+                showModal('warning', '삭제 불가', '최소 1개의 위치는 설정되어야 합니다.');
+            }
+        }
+
+        // 위치 업데이트
+        function updateLocation(index, field, value) {
+            if (field === 'lat' || field === 'lng') {
+                currentSettings.locations[index][field] = parseFloat(value);
+            } else if (field === 'radius') {
+                currentSettings.locations[index][field] = parseInt(value);
+            } else {
+                currentSettings.locations[index][field] = value;
+            }
+        }
+
+        // 현재 위치 가져오기
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                showModal('error', '위치 서비스 없음', '이 브라우저는 위치 서비스를 지원하지 않습니다.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var latitude = position.coords.latitude;
+                    var longitude = position.coords.longitude;
+                    
+                    if (currentSettings.locations.length > 0) {
+                        currentSettings.locations[0].lat = latitude;
+                        currentSettings.locations[0].lng = longitude;
+                        currentSettings.locations[0].name = '현재 위치';
+                        renderLocations();
+                        showModal('success', '위치 가져오기 성공', 
+                            '현재 위치가 설정되었습니다.<br>위도: ' + latitude.toFixed(6) + '<br>경도: ' + longitude.toFixed(6));
+                    }
+                },
+                function(error) {
+                    var errorMessage = '위치를 가져올 수 없습니다.';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = '위치 접근 권한이 거부되었습니다.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = '위치 정보를 사용할 수 없습니다.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = '위치 요청 시간이 초과되었습니다.';
+                            break;
+                    }
+                    showModal('error', '위치 가져오기 실패', errorMessage);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        // 위치 설정 저장
+        function saveLocations() {
+            saveSettings();
+            showModal('success', '저장 완료', '위치 설정이 성공적으로 저장되었습니다.');
+        }
+
+        // 통계 새로고침
+        function refreshStats() {
+            var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+            var deviceIds = [];
+            for (var i = 0; i < attendees.length; i++) {
+                var deviceId = attendees[i].deviceId || attendees[i].name;
+                if (deviceIds.indexOf(deviceId) === -1) {
+                    deviceIds.push(deviceId);
+                }
+            }
+            var uniqueDevices = deviceIds.length;
+            var duplicateCount = attendees.length - uniqueDevices;
+
+            document.getElementById('totalAttendees').textContent = attendees.length;
+            document.getElementById('uniqueDevices').textContent = uniqueDevices;
+            document.getElementById('duplicateCount').textContent = duplicateCount;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
+
+            showModal('success', '새로고침 완료', '통계가 업데이트되었습니다.');
+        }
+
+        // 중복 방지 초기화
+        function resetDuplicateCheck() {
+            if (!confirm('정말로 중복 방지 기록을 초기화하시겠습니까?\n모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
+                return;
+            }
+
+            var keys = Object.keys(localStorage);
+            var removedCount = 0;
+            
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i].indexOf('attendance_') === 0) {
+                    localStorage.removeItem(keys[i]);
+                    removedCount++;
+                }
+            }
+
+            sessionStorage.clear();
+            showModal('success', '초기화 완료', '중복 방지 기록이 초기화되었습니다.\n삭제된 기록: ' + removedCount + '개');
+        }
+
+        // 데이터 내보내기
+        function exportData() {
+            var data = {
+                settings: currentSettings,
+                attendees: JSON.parse(localStorage.getItem('attendanceData') || '[]'),
+                exportDate: new Date().toISOString()
+            };
+
+            var dataStr = JSON.stringify(data, null, 2);
+            var dataBlob = new Blob([dataStr], { type: 'application/json' });
+            var url = URL.createObjectURL(dataBlob);
+            
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = 'attendance_data_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showModal('success', '내보내기 완료', '데이터가 성공적으로 내보내졌습니다.');
+        }
+
+        // 모든 데이터 삭제
+        function clearAllData() {
+            if (!confirm('정말로 모든 출석 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
+
+            var confirmText = prompt('정말로 삭제하시겠습니까? "DELETE"를 입력하세요:');
+            if (confirmText !== 'DELETE') {
+                return;
+            }
+
+            localStorage.removeItem('attendanceData');
+            localStorage.removeItem('attendanceConfig');
+            
+            var keys = Object.keys(localStorage);
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i].indexOf('attendance_') === 0) {
+                    localStorage.removeItem(keys[i]);
+                }
+            }
+
+            refreshStats();
+            showModal('success', '삭제 완료', '모든 출석 데이터가 삭제되었습니다.');
+        }
+
+        // 비밀번호 변경
+        function changePassword() {
+            var newPassword = document.getElementById('newPassword').value;
+            
+            if (!newPassword || newPassword.length < 6) {
+                showModal('warning', '비밀번호 오류', '비밀번호는 6자 이상이어야 합니다.');
+                return;
+            }
+
+            localStorage.setItem('adminPassword', newPassword);
+            document.getElementById('newPassword').value = '';
+            showModal('success', '변경 완료', '관리자 비밀번호가 성공적으로 변경되었습니다.');
+        }
+
+        // GPS 설정 업데이트
+        function updateGPSSettings() {
+            var radius = parseInt(document.getElementById('gpsRadius').value);
+            
+            if (isNaN(radius) || radius < 5 || radius > 100) {
+                showModal('warning', '설정 오류', '허용 반경은 5-100미터 사이의 숫자여야 합니다.');
+                return;
+            }
+
+            for (var i = 0; i < currentSettings.locations.length; i++) {
+                currentSettings.locations[i].radius = radius;
+            }
+
+            saveSettings();
+            renderLocations();
+            showModal('success', '설정 저장', 'GPS 허용 반경이 ' + radius + '미터로 설정되었습니다.');
+        }
+
+        // 모달 표시
+        function showModal(type, title, message) {
+            var modal = document.getElementById('modal');
+            var modalIcon = document.getElementById('modalIcon');
+            var modalTitle = document.getElementById('modalTitle');
+            var modalMessage = document.getElementById('modalMessage');
+
+            modalIcon.className = 'modal-icon ' + type;
+            switch(type) {
+                case 'success': modalIcon.textContent = '✅'; break;
+                case 'error': modalIcon.textContent = '❌'; break;
+                case 'warning': modalIcon.textContent = '⚠️'; break;
+                default: modalIcon.textContent = 'ℹ️';
+            }
+
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message;
+            modal.classList.add('active');
+
+            if (type !== 'error') {
+                setTimeout(function() {
+                    if (modal.classList.contains('active')) {
+                        closeModal();
+                    }
+                }, 3000);
+            }
+        }
+
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // 샘플 데이터 생성
+        function generateSampleData() {
+            if (!localStorage.getItem('attendanceData')) {
+                var sampleData = [
+                    {
+                        name: '김철수',
+                        organization: '컴퓨터공학과',
+                        phone: '010-1234-5678',
+                        timestamp: new Date().toISOString(),
+                        location: '단호홀',
+                        deviceId: 'device_001'
+                    },
+                    {
+                        name: '이영희',
+                        organization: '전자공학과',
+                        phone: '010-2345-6789',
+                        timestamp: new Date().toISOString(),
+                        location: '벡소홀',
+                        deviceId: 'device_002'
+                    },
+                    {
+                        name: '박민수',
+                        organization: '기계공학과',
+                        phone: '010-3456-7890',
+                        timestamp: new Date().toISOString(),
+                        location: '대학교 본관',
+                        deviceId: 'device_003'
+                    }
+                ];
+                localStorage.setItem('attendanceData', JSON.stringify(sampleData));
+            }
+        }
+
         // 주기적 통계 업데이트 (5분마다)
-        setInterval(() => {
+        setInterval(function() {
             if (document.getElementById('adminPanel').style.display !== 'none') {
-                adminSystem.refreshStats();
+                var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+                var deviceIds = [];
+                for (var i = 0; i < attendees.length; i++) {
+                    var deviceId = attendees[i].deviceId || attendees[i].name;
+                    if (deviceIds.indexOf(deviceId) === -1) {
+                        deviceIds.push(deviceId);
+                    }
+                }
+                var uniqueDevices = deviceIds.length;
+                var duplicateCount = attendees.length - uniqueDevices;
+
+                document.getElementById('totalAttendees').textContent = attendees.length;
+                document.getElementById('uniqueDevices').textContent = uniqueDevices;
+                document.getElementById('duplicateCount').textContent = duplicateCount;
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
             }
         }, 5 * 60 * 1000);
     </script>
