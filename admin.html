@@ -418,11 +418,13 @@
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('페이지 로드됨');
+            console.log('기본 비밀번호:', CONFIG.ADMIN_PASSWORD);
             loadSettings();
             setupEventListeners();
             renderLocations();
             generateSampleData();
-            refreshStats();
+            refreshStatsQuiet(); // 모달 없이 조용히 통계 업데이트
         });
 
         // 이벤트 리스너 설정
@@ -447,13 +449,19 @@
             var password = document.getElementById('adminPassword').value;
             var savedPassword = localStorage.getItem('adminPassword') || CONFIG.ADMIN_PASSWORD;
             
+            console.log('입력된 비밀번호:', password);
+            console.log('저장된 비밀번호:', savedPassword);
+            console.log('기본 비밀번호:', CONFIG.ADMIN_PASSWORD);
+            
             if (password === savedPassword) {
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
                 loadSettings();
                 refreshStats();
+                showModal('success', '로그인 성공', '관리자 페이지에 오신 것을 환영합니다!');
             } else {
                 showModal('error', '로그인 실패', '비밀번호가 올바르지 않습니다.');
+                document.getElementById('adminPassword').value = '';
             }
         }
 
@@ -652,8 +660,8 @@
             showModal('success', '저장 완료', '위치 설정이 성공적으로 저장되었습니다.');
         }
 
-        // 통계 새로고침
-        function refreshStats() {
+        // 통계 새로고침 (모달 없는 버전)
+        function refreshStatsQuiet() {
             var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
             var deviceIds = [];
             for (var i = 0; i < attendees.length; i++) {
@@ -669,7 +677,11 @@
             document.getElementById('uniqueDevices').textContent = uniqueDevices;
             document.getElementById('duplicateCount').textContent = duplicateCount;
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
+        }
 
+        // 통계 새로고침
+        function refreshStats() {
+            refreshStatsQuiet();
             showModal('success', '새로고침 완료', '통계가 업데이트되었습니다.');
         }
 
@@ -842,21 +854,7 @@
         // 주기적 통계 업데이트 (5분마다)
         setInterval(function() {
             if (document.getElementById('adminPanel').style.display !== 'none') {
-                var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
-                var deviceIds = [];
-                for (var i = 0; i < attendees.length; i++) {
-                    var deviceId = attendees[i].deviceId || attendees[i].name;
-                    if (deviceIds.indexOf(deviceId) === -1) {
-                        deviceIds.push(deviceId);
-                    }
-                }
-                var uniqueDevices = deviceIds.length;
-                var duplicateCount = attendees.length - uniqueDevices;
-
-                document.getElementById('totalAttendees').textContent = attendees.length;
-                document.getElementById('uniqueDevices').textContent = uniqueDevices;
-                document.getElementById('duplicateCount').textContent = duplicateCount;
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
+                refreshStatsQuiet(); // 모달 없이 조용히 업데이트
             }
         }, 5 * 60 * 1000);
     </script>
