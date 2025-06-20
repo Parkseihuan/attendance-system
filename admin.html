@@ -248,7 +248,7 @@
         <div class="login-form">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
-                <p class="text-gray-600">출석 체크 시스템 관리 v25</p>
+                <p class="text-gray-600">출석 체크 시스템 관리 v26</p>
             </div>
             
             <form id="loginForm">
@@ -702,74 +702,99 @@
             showModal('success', '새로고침 완료', '통계가 업데이트되었습니다.');
         }
 
-        // 중복 방지 초기화
+        // 강력한 중복 방지 초기화 (모든 가능한 키 삭제)
         function resetDuplicateCheck() {
             if (!confirm('정말로 중복 방지 기록을 초기화하시겠습니까?\n모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
                 return;
             }
 
-            console.log('중복 방지 초기화 시작');
+            console.log('=== 강력한 중복 방지 초기화 시작 ===');
             
-            // 1. localStorage에서 attendance_ 로 시작하는 모든 키 삭제
-            var keys = Object.keys(localStorage);
             var removedCount = 0;
             var removedKeys = [];
             
-            for (var i = 0; i < keys.length; i++) {
-                if (keys[i].indexOf('attendance_') === 0) {
-                    console.log('삭제할 키:', keys[i]);
-                    localStorage.removeItem(keys[i]);
-                    removedKeys.push(keys[i]);
-                    removedCount++;
-                }
-            }
-
-            // 2. sessionStorage 전체 초기화
-            sessionStorage.clear();
-            console.log('sessionStorage 초기화 완료');
-
-            // 3. 중복 체크용 기타 키들도 삭제
-            var duplicateCheckKeys = [
-                'lastAttendanceTime',
-                'attendanceSubmitted',
-                'userFingerprint',
-                'deviceFingerprint',
-                'attendanceHash',
-                'userAttended',
-                'attendanceComplete'
-            ];
-
-            for (var j = 0; j < duplicateCheckKeys.length; j++) {
-                if (localStorage.getItem(duplicateCheckKeys[j])) {
-                    localStorage.removeItem(duplicateCheckKeys[j]);
-                    removedKeys.push(duplicateCheckKeys[j]);
-                    removedCount++;
-                    console.log('추가 삭제된 키:', duplicateCheckKeys[j]);
-                }
-            }
-
-            // 4. 실제 출석 데이터는 유지하되, 중복 방지만 초기화
-            // attendanceData는 그대로 두고 중복 방지 기록만 삭제
-
-            console.log('초기화 완료 - 총 ' + removedCount + '개 중복방지 기록 삭제');
-            console.log('삭제된 키들:', removedKeys);
-
-            // 5. 통계는 변경하지 않음 (출석 데이터 자체는 유지)
+            // 1. 모든 localStorage 키 확인 및 삭제
+            var allKeys = Object.keys(localStorage);
+            var suspiciousKeys = [];
             
-            var message = '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
-                         '삭제된 중복방지 기록: ' + removedCount + '개<br>' +
-                         '<strong>모든 사용자가 다시 출석 체크할 수 있습니다.</strong><br>' +
-                         '<small>(기존 출석 데이터는 보존됩니다)</small>';
+            for (var i = 0; i < allKeys.length; i++) {
+                var key = allKeys[i];
+                // attendance 관련 모든 키 삭제
+                if (key.indexOf('attendance') !== -1 || 
+                    key.indexOf('user') !== -1 || 
+                    key.indexOf('device') !== -1 ||
+                    key.indexOf('submitted') !== -1 ||
+                    key.indexOf('check') !== -1 ||
+                    key.indexOf('fingerprint') !== -1) {
+                    
+                    // 중요한 설정은 보존
+                    if (key !== 'attendanceSettings' && 
+                        key !== 'attendanceConfig' && 
+                        key !== 'attendanceData' &&
+                        key !== 'adminPassword') {
+                        localStorage.removeItem(key);
+                        removedKeys.push(key);
+                        removedCount++;
+                        console.log('삭제됨:', key);
+                    }
+                }
+            }
+            
+            // 2. 추가로 알려진 중복 방지 키들 삭제
+            var knownDuplicateKeys = [
+                'attendance_submitted', 'userAttended', 'attendanceSubmitted',
+                'lastAttendanceTime', 'attendanceComplete', 'checkSubmitted',
+                'user_attended', 'device_attended', 'attendance_check',
+                'attendanceHash', 'userFingerprint', 'deviceFingerprint',
+                'attendance_token', 'submit_token', 'user_token',
+                'attendance_timestamp', 'duplicate_check', 'form_submitted'
+            ];
+            
+            for (var j = 0; j < knownDuplicateKeys.length; j++) {
+                if (localStorage.getItem(knownDuplicateKeys[j])) {
+                    localStorage.removeItem(knownDuplicateKeys[j]);
+                    if (removedKeys.indexOf(knownDuplicateKeys[j]) === -1) {
+                        removedKeys.push(knownDuplicateKeys[j]);
+                        removedCount++;
+                    }
+                    console.log('추가 삭제됨:', knownDuplicateKeys[j]);
+                }
+            }
+            
+            // 3. sessionStorage 완전 초기화
+            sessionStorage.clear();
+            console.log('sessionStorage 완전 초기화');
+            
+            // 4. 가능한 모든 쿠키 삭제
+            var cookiesToDelete = [
+                'attendance_check', 'user_attended', 'device_id', 'attendance_token',
+                'submitted', 'userAttended', 'checkComplete', 'attendance_hash'
+            ];
+            
+            for (var k = 0; k < cookiesToDelete.length; k++) {
+                // 다양한 경로와 도메인으로 쿠키 삭제 시도
+                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=' + window.location.hostname;
+                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.' + window.location.hostname;
+                console.log('쿠키 삭제 시도:', cookiesToDelete[k]);
+            }
+            
+            console.log('=== 초기화 완료 ===');
+            console.log('총 삭제된 키:', removedCount + '개');
+            console.log('삭제된 키 목록:', removedKeys);
+            
+            var message = '<strong>🔥 강력한 중복 방지 초기화 완료!</strong><br><br>' +
+                         '✅ 삭제된 기록: ' + removedCount + '개<br>' +
+                         '✅ sessionStorage 초기화<br>' +
+                         '✅ 관련 쿠키 삭제<br><br>' +
+                         '<strong>📱 이제 출석체크 페이지를 새로고침하세요!</strong><br>' +
+                         '<small>Ctrl+F5로 강제 새로고침 권장</small>';
             
             if (removedKeys.length > 0) {
-                message += '<br><small>삭제된 항목: ' + removedKeys.join(', ') + '</small>';
-            } else {
-                message = '삭제할 중복 방지 기록이 없습니다.<br>' +
-                         '<small>아직 실제 출석체크가 이루어지지 않았거나<br>' +
-                         '이미 초기화된 상태입니다.</small>';
+                message += '<br><br><small>삭제된 항목:<br>' + removedKeys.join('<br>') + '</small>';
             }
-
-            showModal('success', '초기화 완료', message);
+            
+            showModal('success', '강력한 초기화 완료', message);
         }
 
         // 데이터 내보내기
