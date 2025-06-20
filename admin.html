@@ -117,6 +117,16 @@
             box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
         }
 
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(245, 158, 11, 0.3);
+        }
+
         .btn:disabled {
             background: #9ca3af;
             cursor: not-allowed;
@@ -340,9 +350,13 @@
                             <h4 class="font-semibold mb-3">🔄 중복 방지 초기화</h4>
                             <p class="text-sm text-gray-600 mb-3">
                                 동일한 장소에서 오전/오후 행사를 진행할 때 사용자들이 다시 출석 체크할 수 있도록 중복 방지 기록을 초기화합니다.
+                                <br><strong>주의:</strong> 출석 데이터는 보존되고 중복 방지 기록만 삭제됩니다.
                             </p>
-                            <button class="btn btn-danger w-full" onclick="resetDuplicateCheck()">
+                            <button class="btn btn-danger w-full mb-2" onclick="resetDuplicateCheck()">
                                 🗑️ 중복 방지 초기화
+                            </button>
+                            <button class="btn btn-warning w-full" onclick="removeSampleData()">
+                                🧪 샘플 데이터 제거
                             </button>
                         </div>
                         
@@ -717,7 +731,9 @@
                 'attendanceSubmitted',
                 'userFingerprint',
                 'deviceFingerprint',
-                'attendanceHash'
+                'attendanceHash',
+                'userAttended',
+                'attendanceComplete'
             ];
 
             for (var j = 0; j < duplicateCheckKeys.length; j++) {
@@ -729,25 +745,25 @@
                 }
             }
 
-            // 4. 쿠키도 삭제 (중복 방지용)
-            var cookiesToDelete = ['attendance_check', 'user_attended', 'device_id'];
-            for (var k = 0; k < cookiesToDelete.length; k++) {
-                document.cookie = cookiesToDelete[k] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
-                console.log('쿠키 삭제:', cookiesToDelete[k]);
-            }
+            // 4. 실제 출석 데이터는 유지하되, 중복 방지만 초기화
+            // attendanceData는 그대로 두고 중복 방지 기록만 삭제
 
-            console.log('초기화 완료 - 총 ' + removedCount + '개 항목 삭제');
+            console.log('초기화 완료 - 총 ' + removedCount + '개 중복방지 기록 삭제');
             console.log('삭제된 키들:', removedKeys);
 
-            // 5. 통계 즉시 업데이트
-            refreshStatsQuiet();
-
+            // 5. 통계는 변경하지 않음 (출석 데이터 자체는 유지)
+            
             var message = '중복 방지 기록이 성공적으로 초기화되었습니다.<br>' +
-                         '삭제된 기록: ' + removedCount + '개<br>' +
-                         '모든 사용자가 다시 출석 체크할 수 있습니다.';
+                         '삭제된 중복방지 기록: ' + removedCount + '개<br>' +
+                         '<strong>모든 사용자가 다시 출석 체크할 수 있습니다.</strong><br>' +
+                         '<small>(기존 출석 데이터는 보존됩니다)</small>';
             
             if (removedKeys.length > 0) {
                 message += '<br><small>삭제된 항목: ' + removedKeys.join(', ') + '</small>';
+            } else {
+                message = '삭제할 중복 방지 기록이 없습니다.<br>' +
+                         '<small>아직 실제 출석체크가 이루어지지 않았거나<br>' +
+                         '이미 초기화된 상태입니다.</small>';
             }
 
             showModal('success', '초기화 완료', message);
@@ -895,8 +911,9 @@
             document.getElementById('modal').classList.remove('active');
         }
 
-        // 샘플 데이터 생성
+        // 샘플 데이터 생성 (테스트용 - 실제 운영시에는 제거)
         function generateSampleData() {
+            // 샘플 데이터가 없을 때만 생성 (한 번만)
             if (!localStorage.getItem('attendanceData')) {
                 var sampleData = [
                     {
@@ -925,6 +942,19 @@
                     }
                 ];
                 localStorage.setItem('attendanceData', JSON.stringify(sampleData));
+                console.log('샘플 데이터 생성됨 (테스트용)');
+            } else {
+                console.log('기존 출석 데이터 유지');
+            }
+        }
+
+        // 샘플 데이터 제거 (실제 운영용)
+        function removeSampleData() {
+            if (confirm('샘플 데이터를 제거하고 실제 운영 모드로 전환하시겠습니까?')) {
+                localStorage.removeItem('attendanceData');
+                localStorage.setItem('attendanceData', JSON.stringify([])); // 빈 배열로 초기화
+                refreshStatsQuiet();
+                showModal('success', '샘플 데이터 제거', '샘플 데이터가 제거되었습니다.<br>이제 실제 출석체크부터 시작됩니다.');
             }
         }
 
