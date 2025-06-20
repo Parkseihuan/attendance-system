@@ -248,7 +248,7 @@
         <div class="login-form">
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
-                <p class="text-gray-600">출석 체크 시스템 관리 v22</p>
+                <p class="text-gray-600">출석 체크 시스템 관리 v25</p>
             </div>
             
             <form id="loginForm">
@@ -355,8 +355,11 @@
                             <button class="btn btn-danger w-full mb-2" onclick="resetDuplicateCheck()">
                                 🗑️ 중복 방지 초기화
                             </button>
-                            <button class="btn btn-warning w-full" onclick="removeSampleData()">
+                            <button class="btn btn-warning w-full mb-2" onclick="removeSampleData()">
                                 🧪 샘플 데이터 제거
+                            </button>
+                            <button class="btn btn-primary w-full" onclick="checkCurrentStatus()">
+                                🔍 현재 상태 확인
                             </button>
                         </div>
                         
@@ -958,12 +961,86 @@
             }
         }
 
-        // 주기적 통계 업데이트 (5분마다)
-        setInterval(function() {
-            if (document.getElementById('adminPanel').style.display !== 'none') {
-                refreshStatsQuiet(); // 모달 없이 조용히 업데이트
+        // 현재 상태 확인
+        function checkCurrentStatus() {
+            console.log('=== 현재 상태 확인 ===');
+            
+            var statusInfo = [];
+            var keys = Object.keys(localStorage);
+            var sessionKeys = Object.keys(sessionStorage);
+            
+            // localStorage 확인
+            statusInfo.push('📦 localStorage 키 개수: ' + keys.length);
+            
+            // attendance_ 키들 확인
+            var attendanceKeys = [];
+            for (var i = 0; i < keys.length; i++) {
+                if (keys[i].indexOf('attendance_') === 0) {
+                    attendanceKeys.push(keys[i]);
+                }
             }
-        }, 5 * 60 * 1000);
+            statusInfo.push('🔒 중복방지 키들 (' + attendanceKeys.length + '개): ' + (attendanceKeys.length > 0 ? attendanceKeys.join(', ') : '없음'));
+            
+            // 출석 데이터 확인
+            var attendanceData = localStorage.getItem('attendanceData');
+            var attendeeCount = 0;
+            if (attendanceData) {
+                try {
+                    var parsed = JSON.parse(attendanceData);
+                    attendeeCount = parsed.length;
+                    statusInfo.push('👥 출석자 수: ' + attendeeCount + '명');
+                } catch (e) {
+                    statusInfo.push('❌ 출석 데이터 오류');
+                }
+            } else {
+                statusInfo.push('📝 출석 데이터: 없음');
+            }
+            
+            // sessionStorage 확인
+            statusInfo.push('💾 sessionStorage 키 개수: ' + sessionKeys.length);
+            
+            // 기타 중복 방지 관련 키들
+            var otherKeys = ['lastAttendanceTime', 'attendanceSubmitted', 'userFingerprint', 'deviceFingerprint', 'attendanceHash', 'userAttended', 'attendanceComplete'];
+            var foundOtherKeys = [];
+            for (var j = 0; j < otherKeys.length; j++) {
+                if (localStorage.getItem(otherKeys[j])) {
+                    foundOtherKeys.push(otherKeys[j]);
+                }
+            }
+            statusInfo.push('🔐 기타 중복방지 키들 (' + foundOtherKeys.length + '개): ' + (foundOtherKeys.length > 0 ? foundOtherKeys.join(', ') : '없음'));
+            
+            // 쿠키 확인
+            var cookieString = document.cookie;
+            var attendanceCookies = [];
+            if (cookieString) {
+                var cookies = cookieString.split(';');
+                for (var k = 0; k < cookies.length; k++) {
+                    var cookie = cookies[k].trim();
+                    if (cookie.indexOf('attendance') === 0 || cookie.indexOf('user_attended') === 0 || cookie.indexOf('device_id') === 0) {
+                        attendanceCookies.push(cookie.split('=')[0]);
+                    }
+                }
+            }
+            statusInfo.push('🍪 관련 쿠키들 (' + attendanceCookies.length + '개): ' + (attendanceCookies.length > 0 ? attendanceCookies.join(', ') : '없음'));
+            
+            // 결과 표시
+            var message = statusInfo.join('<br>');
+            
+            console.log('현재 상태 정보:');
+            for (var l = 0; l < statusInfo.length; l++) {
+                console.log(statusInfo[l]);
+            }
+            
+            // 권장 사항 추가
+            var recommendation = '<br><br><strong>📋 권장 사항:</strong><br>';
+            if (attendanceKeys.length > 0 || foundOtherKeys.length > 0) {
+                recommendation += '🔧 중복방지 초기화를 실행하여 모든 기기에서 재출석이 가능하도록 할 수 있습니다.';
+            } else {
+                recommendation += '✅ 현재 중복방지 기록이 없어서 모든 기기에서 출석체크가 가능합니다.';
+            }
+            
+            showModal('success', '현재 상태 확인', message + recommendation);
+        }
     </script>
 </body>
 </html>
