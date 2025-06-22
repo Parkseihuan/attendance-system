@@ -1113,6 +1113,32 @@
         window.addEventListener('unhandledrejection', (event) => {
             console.error('처리되지 않은 Promise 거부:', event.reason);
         });
+        
+// 관리자 설정 불러오기
+function loadAdminSettings() {
+    try {
+        var config = localStorage.getItem('attendanceConfig');
+        if (config) {
+            var settings = JSON.parse(config);
+            // 제목 업데이트
+            if (settings.eventTitle) {
+                var titleEl = document.querySelector('h1, .event-title, #eventTitle');
+                if (titleEl) titleEl.textContent = settings.eventTitle;
+            }
+            // 설명 업데이트
+            if (settings.eventDescription) {
+                var descEl = document.querySelector('.event-description, #eventDescription');
+                if (descEl) descEl.textContent = settings.eventDescription;
+            }
+        }
+    } catch (e) {
+        console.error('설정 로드 오류:', e);
+    }
+}
+
+// 페이지 로드 시 실행
+document.addEventListener('DOMContentLoaded', loadAdminSettings);
+        
     </script>
 </body>
 </html>
