@@ -269,7 +269,7 @@
         <div class="login-form">
             <div class="text-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
-                <p class="text-gray-600">출석 체크 시스템 관리 v11</p>
+                <p class="text-gray-600">출석 체크 시스템 관리 v12</p>
             </div>
             
             <form id="loginForm">
@@ -560,15 +560,30 @@
         // 모든 설정 저장
         function saveAllSettings() {
             try {
-                currentSettings.eventTitle = document.getElementById('eventTitle').value;
-                currentSettings.eventDescription = document.getElementById('eventDescription').value;
-                currentSettings.manualInstruction = document.getElementById('manualInstruction').value;
+                // 입력값 가져오기
+                var newEventTitle = document.getElementById('eventTitle').value.trim();
+                var newEventDescription = document.getElementById('eventDescription').value.trim();
+                var newManualInstruction = document.getElementById('manualInstruction').value.trim();
 
-                if (!currentSettings.eventTitle.trim()) {
+                // 유효성 검사
+                if (!newEventTitle) {
                     showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                    document.getElementById('eventTitle').focus();
                     return;
                 }
 
+                if (!newEventDescription) {
+                    showModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
+                    document.getElementById('eventDescription').focus();
+                    return;
+                }
+
+                // 설정 업데이트
+                currentSettings.eventTitle = newEventTitle;
+                currentSettings.eventDescription = newEventDescription;
+                currentSettings.manualInstruction = newManualInstruction;
+
+                // GPS 반경 설정
                 var radius = parseInt(document.getElementById('gpsRadius').value);
                 if (!isNaN(radius) && radius >= 5 && radius <= 100) {
                     for (var i = 0; i < currentSettings.locations.length; i++) {
@@ -576,14 +591,18 @@
                     }
                 }
 
+                // 비밀번호 변경
                 var newPassword = document.getElementById('adminPasswordNew').value;
                 if (newPassword && newPassword.length >= 6) {
                     localStorage.setItem(CONFIG.STORAGE_PREFIX + 'adminPassword', newPassword);
                     document.getElementById('adminPasswordNew').value = '';
+                    console.log('관리자 비밀번호가 변경되었습니다.');
                 }
 
+                // 설정 저장 (관리자용)
                 localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
                 
+                // 출석체크 페이지용 설정 생성 및 저장
                 var configForAttendance = {
                     eventTitle: currentSettings.eventTitle,
                     eventDescription: currentSettings.eventDescription,
@@ -592,11 +611,28 @@
                 };
                 localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
 
+                // UI 업데이트
                 renderLocations();
-                showModal('success', '설정 저장 완료', '모든 설정이 성공적으로 저장되었습니다.');
+                
+                // 성공 메시지와 함께 변경사항 확인
+                var changesSummary = '다음 설정이 저장되었습니다:<br><br>' +
+                                   '📝 행사 제목: "' + currentSettings.eventTitle + '"<br>' +
+                                   '📄 행사 설명: "' + currentSettings.eventDescription + '"<br>' +
+                                   '📍 위치 수: ' + currentSettings.locations.length + '개<br>' +
+                                   '📏 GPS 반경: ' + (currentSettings.locations[0] ? currentSettings.locations[0].radius + 'm' : 'N/A');
+
+                showModal('success', '설정 저장 완료', changesSummary);
+                
+                // 콘솔에도 로그 출력
+                console.log('설정 저장 완료:', {
+                    eventTitle: currentSettings.eventTitle,
+                    eventDescription: currentSettings.eventDescription,
+                    locationsCount: currentSettings.locations.length
+                });
                 
             } catch (e) {
-                showModal('error', '저장 실패', '설정 저장 중 오류가 발생했습니다.');
+                console.error('설정 저장 오류:', e);
+                showModal('error', '저장 실패', '설정 저장 중 오류가 발생했습니다.<br>오류: ' + e.message);
             }
         }
 
