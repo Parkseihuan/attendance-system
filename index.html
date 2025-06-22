@@ -555,7 +555,7 @@
             GPS_TIMEOUT: 15000, // 15초
             GPS_MAX_AGE: 300000, // 5분
             
-            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음)
+            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음) - 벽소홀로 수정
             ALLOWED_LOCATIONS: [
                 {
                     name: "단호홀",
@@ -1021,6 +1021,16 @@
                     userAgent: navigator.userAgent,
                     submissionAttempt: this.submissionAttempts
                 };
+
+                // localStorage에 출석 데이터 저장 (관리자 페이지에서 확인용)
+                try {
+                    const existingData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+                    existingData.push(submitData);
+                    localStorage.setItem('attendanceData', JSON.stringify(existingData));
+                    console.log('localStorage에 출석 데이터 저장 완료');
+                } catch (storageError) {
+                    console.warn('localStorage 저장 실패:', storageError);
+                }
 
                 if (CONFIG.GOOGLE_SCRIPT_URL && !CONFIG.GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
                     console.log('Google Apps Script로 데이터 전송 시도 중...');
