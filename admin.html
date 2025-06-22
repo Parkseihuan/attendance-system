@@ -269,7 +269,7 @@
         <div class="login-form">
             <div class="text-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
-                <p class="text-gray-600">출석 체크 시스템 관리 v12</p>
+                <p class="text-gray-600">출석 체크 시스템 관리 v14</p>
             </div>
             
             <form id="loginForm">
@@ -373,6 +373,8 @@
                         
                         <div class="grid grid-cols-1 gap-4">
                             <button class="btn btn-success" onclick="saveAllSettings()">💾 모든 설정 저장</button>
+                            <button class="btn btn-primary" onclick="generateSettingsCode()">📋 출석체크 페이지 연동 코드</button>
+                            <button class="btn btn-warning" onclick="debugSettings()">🔍 설정 디버그</button>
                         </div>
                     </div>
 
@@ -602,14 +604,24 @@
                 // 설정 저장 (관리자용)
                 localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
                 
-                // 출석체크 페이지용 설정 생성 및 저장
+                // 출석체크 페이지용 설정 생성 및 저장 (여러 키로 저장)
                 var configForAttendance = {
                     eventTitle: currentSettings.eventTitle,
                     eventDescription: currentSettings.eventDescription,
                     manualInstruction: currentSettings.manualInstruction,
                     allowedLocations: currentSettings.locations
                 };
+                
+                // 다양한 키로 저장하여 호환성 확보
                 localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
+                localStorage.setItem('eventConfig', JSON.stringify(configForAttendance));
+                localStorage.setItem('checkConfig', JSON.stringify(configForAttendance));
+                
+                // 개별 설정도 저장
+                localStorage.setItem('eventTitle', currentSettings.eventTitle);
+                localStorage.setItem('eventDescription', currentSettings.eventDescription);
+                localStorage.setItem('manualInstruction', currentSettings.manualInstruction);
+                localStorage.setItem('allowedLocations', JSON.stringify(currentSettings.locations));
 
                 // UI 업데이트
                 renderLocations();
@@ -618,8 +630,10 @@
                 var changesSummary = '다음 설정이 저장되었습니다:<br><br>' +
                                    '📝 행사 제목: "' + currentSettings.eventTitle + '"<br>' +
                                    '📄 행사 설명: "' + currentSettings.eventDescription + '"<br>' +
+                                   '📋 수동 안내: "' + currentSettings.manualInstruction.substring(0, 30) + '..."<br>' +
                                    '📍 위치 수: ' + currentSettings.locations.length + '개<br>' +
-                                   '📏 GPS 반경: ' + (currentSettings.locations[0] ? currentSettings.locations[0].radius + 'm' : 'N/A');
+                                   '📏 GPS 반경: ' + (currentSettings.locations[0] ? currentSettings.locations[0].radius + 'm' : 'N/A') + '<br><br>' +
+                                   '💡 <strong>출석체크 페이지를 새로고침(F5)하면 변경사항이 적용됩니다.</strong>';
 
                 showModal('success', '설정 저장 완료', changesSummary);
                 
@@ -627,13 +641,86 @@
                 console.log('설정 저장 완료:', {
                     eventTitle: currentSettings.eventTitle,
                     eventDescription: currentSettings.eventDescription,
+                    manualInstruction: currentSettings.manualInstruction,
                     locationsCount: currentSettings.locations.length
                 });
+
+                // 저장된 키들 확인
+                console.log('저장된 localStorage 키들:');
+                console.log('- attendanceConfig:', localStorage.getItem('attendanceConfig') ? '✅' : '❌');
+                console.log('- eventTitle:', localStorage.getItem('eventTitle') ? '✅' : '❌');
+                console.log('- eventDescription:', localStorage.getItem('eventDescription') ? '✅' : '❌');
+                console.log('- manualInstruction:', localStorage.getItem('manualInstruction') ? '✅' : '❌');
                 
             } catch (e) {
                 console.error('설정 저장 오류:', e);
                 showModal('error', '저장 실패', '설정 저장 중 오류가 발생했습니다.<br>오류: ' + e.message);
             }
+        }
+
+        // 설정 디버깅 함수 추가
+        function debugSettings() {
+            console.log('=== 현재 localStorage 설정 확인 ===');
+            console.log('attendanceConfig:', localStorage.getItem('attendanceConfig'));
+            console.log('eventTitle:', localStorage.getItem('eventTitle'));
+            console.log('eventDescription:', localStorage.getItem('eventDescription'));
+            console.log('manualInstruction:', localStorage.getItem('manualInstruction'));
+            console.log('allowedLocations:', localStorage.getItem('allowedLocations'));
+            
+            try {
+                var config = JSON.parse(localStorage.getItem('attendanceConfig'));
+                console.log('파싱된 attendanceConfig:', config);
+            } catch (e) {
+                console.error('attendanceConfig 파싱 오류:', e);
+            }
+        }
+
+        // 설정 코드 생성 함수 추가
+        function generateSettingsCode() {
+            var codeForAttendancePage = 
+                '<div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin: 10px 0;">' +
+                '<h4 style="color: #0369a1; margin-bottom: 10px; font-weight: 600;">📋 출석체크 페이지에 추가할 코드</h4>' +
+                '<p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">이 코드를 출석체크 페이지의 &lt;script&gt; 부분에 추가하세요:</p>' +
+                
+                '<div style="background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 11px; overflow-x: auto; margin-bottom: 10px;">' +
+                '// 관리자 설정 불러오기<br>' +
+                'function loadAdminSettings() {<br>' +
+                '&nbsp;&nbsp;try {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;var config = localStorage.getItem(\'attendanceConfig\');<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;if (config) {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;var settings = JSON.parse(config);<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 제목 업데이트<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (settings.eventTitle) {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;var titleEl = document.querySelector(\'h1, .event-title, #eventTitle\');<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (titleEl) titleEl.textContent = settings.eventTitle;<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 설명 업데이트<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (settings.eventDescription) {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;var descEl = document.querySelector(\'.event-description, #eventDescription\');<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (descEl) descEl.textContent = settings.eventDescription;<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 수동 안내 업데이트<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (settings.manualInstruction) {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;var manualEl = document.querySelector(\'.manual-instruction, #manualInstruction\');<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (manualEl) manualEl.textContent = settings.manualInstruction;<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;}<br>' +
+                '&nbsp;&nbsp;} catch (e) {<br>' +
+                '&nbsp;&nbsp;&nbsp;&nbsp;console.error(\'설정 로드 오류:\', e);<br>' +
+                '&nbsp;&nbsp;}<br>' +
+                '}<br><br>' +
+                '// 페이지 로드 시 실행<br>' +
+                'document.addEventListener(\'DOMContentLoaded\', loadAdminSettings);' +
+                '</div>' +
+                
+                '<p style="font-size: 11px; color: #64748b;">또는 간단하게 개별 설정을 사용할 수도 있습니다:</p>' +
+                '<div style="background: #1e293b; color: #e2e8f0; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 11px;">' +
+                'var eventTitle = localStorage.getItem(\'eventTitle\') || \'기본 제목\';<br>' +
+                'var eventDescription = localStorage.getItem(\'eventDescription\') || \'기본 설명\';' +
+                '</div>' +
+                '</div>';
+            
+            showModal('success', '출석체크 페이지 연동 코드', codeForAttendancePage);
         }
 
         // 강력한 중복 방지 초기화 함수
