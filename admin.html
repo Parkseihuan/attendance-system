@@ -96,14 +96,6 @@
             color: white;
         }
 
-        .location-item {
-            background: #f8fafc;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -216,7 +208,6 @@
             padding: 20px;
         }
 
-        /* 모바일 최적화 */
         @media (max-width: 768px) {
             body {
                 padding: 5px;
@@ -269,7 +260,7 @@
         <div class="login-form">
             <div class="text-center mb-6">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">🔐 관리자 로그인</h1>
-                <p class="text-gray-600">출석 체크 시스템 관리 v5</p>
+                <p class="text-gray-600">출석 체크 시스템 관리</p>
             </div>
             
             <form id="loginForm">
@@ -305,7 +296,7 @@
                     <div class="tab-buttons">
                         <button class="tab-button active" onclick="switchTab('stats')">📊 통계</button>
                         <button class="tab-button" onclick="switchTab('settings')">⚙️ 설정</button>
-                        <button class="tab-button" onclick="switchTab('locations')">📍 위치</button>
+                        <button class="tab-button" onclick="switchTab('location')">📍 위치</button>
                         <button class="tab-button" onclick="switchTab('system')">🔧 시스템</button>
                     </div>
 
@@ -380,18 +371,48 @@
                     </div>
 
                     <!-- 위치 탭 -->
-                    <div id="locationsTab" class="tab-content" style="display: none;">
-                        <h3 class="text-lg font-bold mb-4">📍 허용 위치 설정</h3>
-                        <p class="text-gray-600 mb-4">출석 체크가 가능한 장소를 최대 3곳까지 설정할 수 있습니다.</p>
+                    <div id="locationTab" class="tab-content" style="display: none;">
+                        <h3 class="text-lg font-bold mb-4">📍 행사 위치 설정</h3>
+                        <p class="text-gray-600 mb-4">지도에서 직접 클릭하여 행사 장소를 설정할 수 있습니다.</p>
                         
-                        <div id="locationsContainer">
-                            <!-- 위치 항목들이 여기에 동적으로 추가됩니다 -->
+                        <div class="form-group">
+                            <label for="locationName">장소명</label>
+                            <input type="text" id="locationName" placeholder="예: 세미나실A" class="w-full p-3 border rounded">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="locationRadius">GPS 허용 반경 (미터)</label>
+                            <input type="number" id="locationRadius" placeholder="30" min="5" max="100" value="30" class="w-full p-3 border rounded">
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                            <button class="btn btn-primary" onclick="getCurrentLocation()">📍 현재 위치</button>
-                            <button class="btn btn-success" onclick="saveLocations()">💾 위치 저장</button>
-                            <button class="btn btn-warning" onclick="addLocation()">➕ 위치 추가</button>
+                        <!-- 지도 컨테이너 -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">📍 지도에서 위치 선택</label>
+                            <div id="mapContainer" style="height: 400px; border: 2px solid #e5e7eb; border-radius: 8px; background: #f8f9fa;">
+                                <div style="display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; color: #6b7280;">
+                                    <div style="font-size: 48px; margin-bottom: 10px;">🗺️</div>
+                                    <div style="font-weight: 600; margin-bottom: 5px;">구글 지도</div>
+                                    <div style="font-size: 14px; text-align: center;">지도를 클릭하여 위치를 선택하세요</div>
+                                    <button type="button" id="loadMapBtn" class="btn btn-primary mt-3" onclick="loadGoogleMap()">
+                                        🗺️ 지도 로드
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 현재 위치 정보 -->
+                        <div id="currentLocationInfo" class="bg-gray-50 p-4 rounded-lg border">
+                            <h4 class="font-semibold mb-2">현재 설정된 위치</h4>
+                            <div id="locationDetails">
+                                <p><strong>장소명:</strong> <span id="currentLocationName">설정되지 않음</span></p>
+                                <p><strong>좌표:</strong> <span id="currentLocationCoords">-</span></p>
+                                <p><strong>반경:</strong> <span id="currentLocationRadius">-</span>m</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <button class="btn btn-success" onclick="saveLocation()">💾 위치 저장</button>
+                            <button class="btn btn-primary" onclick="getCurrentLocation()">📍 현재 위치 사용</button>
                         </div>
                     </div>
 
@@ -451,20 +472,22 @@
             eventTitle: '🎓 세미나실 출석 체크',
             eventDescription: '행사 참석 확인을 위해 정보를 입력해 주세요',
             manualInstruction: '행사장 앞쪽에 비치된 \'참석자 명부\'에 직접 기재해 주시기 바랍니다.',
-            locations: [
-                { name: '단호홀', lat: 37.228848, lng: 127.167855, radius: 30 },
-                { name: '벽소홀', lat: 37.228767, lng: 127.167449, radius: 30 },
-                { name: '대학교 본관', lat: 37.227239, lng: 127.166598, radius: 30 }
-            ]
+            location: {
+                name: '세미나실',
+                lat: 37.228848,
+                lng: 127.167855,
+                radius: 30
+            }
         };
 
         var currentTab = 'stats';
+        var map, marker;
 
         // 초기화
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
             loadSettings();
-            renderLocations();
+            updateLocationUI();
             generateSampleData();
             refreshStatsQuiet();
         });
@@ -537,110 +560,122 @@
             document.getElementById('adminPassword').value = '';
         }
 
-        // 설정 불러오기
+        // 설정 불러오기 (완전 호환성 개선)
         function loadSettings() {
-            try {
-                var savedSettings = localStorage.getItem(CONFIG.STORAGE_PREFIX + 'settings');
-                if (savedSettings) {
-                    var parsedSettings = JSON.parse(savedSettings);
-                    for (var key in parsedSettings) {
-                        if (parsedSettings.hasOwnProperty(key) && currentSettings.hasOwnProperty(key)) {
-                            currentSettings[key] = parsedSettings[key];
-                        }
+            var savedSettings = null;
+            
+            if (window.localStorage) {
+                var settingsData = localStorage.getItem(CONFIG.STORAGE_PREFIX + 'settings');
+                if (settingsData) {
+                    savedSettings = JSON.parse(settingsData);
+                    
+                    if (savedSettings.eventTitle) currentSettings.eventTitle = savedSettings.eventTitle;
+                    if (savedSettings.eventDescription) currentSettings.eventDescription = savedSettings.eventDescription;
+                    if (savedSettings.manualInstruction) currentSettings.manualInstruction = savedSettings.manualInstruction;
+                    
+                    if (savedSettings.location) {
+                        currentSettings.location = savedSettings.location;
+                    } else if (savedSettings.locations && savedSettings.locations.length > 0) {
+                        currentSettings.location = savedSettings.locations[0];
                     }
                 }
-
-                document.getElementById('eventTitle').value = currentSettings.eventTitle;
-                document.getElementById('eventDescription').value = currentSettings.eventDescription;
-                document.getElementById('manualInstruction').value = currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
-                document.getElementById('gpsRadius').value = currentSettings.locations[0] ? currentSettings.locations[0].radius : 30;
-                
-            } catch (e) {
-                showModal('warning', '설정 로드 실패', '기본 설정을 사용합니다.');
             }
+
+            var titleEl = document.getElementById('eventTitle');
+            var descEl = document.getElementById('eventDescription');
+            var manualEl = document.getElementById('manualInstruction');
+            var radiusEl = document.getElementById('gpsRadius');
+
+            if (titleEl) titleEl.value = currentSettings.eventTitle;
+            if (descEl) descEl.value = currentSettings.eventDescription;
+            if (manualEl) manualEl.value = currentSettings.manualInstruction.replace(/<[^>]*>/g, '');
+            if (radiusEl) radiusEl.value = currentSettings.location.radius || 30;
+            
+            updateLocationUI();
         }
 
-        // 모든 설정 저장 (개선됨)
+        // 모든 설정 저장 (완전 호환성 개선)
         function saveAllSettings() {
-            try {
-                // 입력값 가져오기
-                var newEventTitle = document.getElementById('eventTitle').value.trim();
-                var newEventDescription = document.getElementById('eventDescription').value.trim();
-                var newManualInstruction = document.getElementById('manualInstruction').value.trim();
+            var titleEl = document.getElementById('eventTitle');
+            var descEl = document.getElementById('eventDescription');
+            var manualEl = document.getElementById('manualInstruction');
+            var radiusEl = document.getElementById('gpsRadius');
 
-                // 유효성 검사
-                if (!newEventTitle) {
-                    showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
-                    document.getElementById('eventTitle').focus();
-                    return;
-                }
+            var newEventTitle = titleEl ? titleEl.value.trim() : '';
+            var newEventDescription = descEl ? descEl.value.trim() : '';
+            var newManualInstruction = manualEl ? manualEl.value.trim() : '';
 
-                if (!newEventDescription) {
-                    showModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
-                    document.getElementById('eventDescription').focus();
-                    return;
-                }
+            if (!newEventTitle) {
+                showModal('warning', '입력 오류', '행사 제목을 입력해주세요.');
+                if (titleEl) titleEl.focus();
+                return;
+            }
 
-                // 설정 업데이트
-                currentSettings.eventTitle = newEventTitle;
-                currentSettings.eventDescription = newEventDescription;
-                currentSettings.manualInstruction = newManualInstruction;
+            if (!newEventDescription) {
+                showModal('warning', '입력 오류', '행사 설명을 입력해주세요.');
+                if (descEl) descEl.focus();
+                return;
+            }
 
-                // GPS 반경 설정
-                var radius = parseInt(document.getElementById('gpsRadius').value);
-                if (!isNaN(radius) && radius >= 5 && radius <= 100) {
-                    for (var i = 0; i < currentSettings.locations.length; i++) {
-                        currentSettings.locations[i].radius = radius;
-                    }
-                }
+            currentSettings.eventTitle = newEventTitle;
+            currentSettings.eventDescription = newEventDescription;
+            currentSettings.manualInstruction = newManualInstruction;
 
-                // 비밀번호 변경
-                var newPassword = document.getElementById('adminPasswordNew').value;
-                if (newPassword && newPassword.length >= 6) {
+            var radius = radiusEl ? parseInt(radiusEl.value) : 30;
+            if (!isNaN(radius) && radius >= 5 && radius <= 100) {
+                currentSettings.location.radius = radius;
+            }
+
+            var passwordEl = document.getElementById('adminPasswordNew');
+            var newPassword = passwordEl ? passwordEl.value : '';
+            if (newPassword && newPassword.length >= 6) {
+                if (window.localStorage) {
                     localStorage.setItem(CONFIG.STORAGE_PREFIX + 'adminPassword', newPassword);
-                    document.getElementById('adminPasswordNew').value = '';
-                    console.log('관리자 비밀번호가 변경되었습니다.');
                 }
+                if (passwordEl) passwordEl.value = '';
+                console.log('관리자 비밀번호가 변경되었습니다.');
+            }
 
-                // 설정 저장 (관리자용)
+            if (window.localStorage) {
                 localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
                 
-                // 출석체크 페이지용 설정 생성 및 저장
                 var configForAttendance = {
                     eventTitle: currentSettings.eventTitle,
                     eventDescription: currentSettings.eventDescription,
                     manualInstruction: currentSettings.manualInstruction,
-                    allowedLocations: currentSettings.locations
+                    allowedLocation: currentSettings.location,
+                    allowedLocations: [currentSettings.location]
                 };
                 
-                // 다양한 키로 저장하여 호환성 확보
                 localStorage.setItem('attendanceConfig', JSON.stringify(configForAttendance));
                 localStorage.setItem('eventConfig', JSON.stringify(configForAttendance));
                 localStorage.setItem('checkConfig', JSON.stringify(configForAttendance));
                 
-                // 개별 설정도 저장
                 localStorage.setItem('eventTitle', currentSettings.eventTitle);
                 localStorage.setItem('eventDescription', currentSettings.eventDescription);
                 localStorage.setItem('manualInstruction', currentSettings.manualInstruction);
-                localStorage.setItem('allowedLocations', JSON.stringify(currentSettings.locations));
-
-                // UI 업데이트
-                renderLocations();
-                
-                var changesSummary = '다음 설정이 저장되었습니다:<br><br>' +
-                                   '📝 행사 제목: "' + currentSettings.eventTitle + '"<br>' +
-                                   '📄 행사 설명: "' + currentSettings.eventDescription + '"<br>' +
-                                   '📋 수동 안내: "' + currentSettings.manualInstruction.substring(0, 30) + '..."<br>' +
-                                   '📍 위치 수: ' + currentSettings.locations.length + '개<br>' +
-                                   '📏 GPS 반경: ' + (currentSettings.locations[0] ? currentSettings.locations[0].radius + 'm' : 'N/A') + '<br><br>' +
-                                   '💡 <strong>출석체크 페이지를 새로고침(F5)하면 변경사항이 적용됩니다.</strong>';
-
-                showModal('success', '설정 저장 완료', changesSummary);
-                
-            } catch (e) {
-                console.error('설정 저장 오류:', e);
-                showModal('error', '저장 실패', '설정 저장 중 오류가 발생했습니다.<br>오류: ' + e.message);
+                localStorage.setItem('allowedLocation', JSON.stringify(currentSettings.location));
+                localStorage.setItem('allowedLocations', JSON.stringify([currentSettings.location]));
             }
+
+            updateLocationUI();
+            
+            var changesSummary = '다음 설정이 저장되었습니다:<br><br>' +
+                               '📝 행사 제목: "' + currentSettings.eventTitle + '"<br>' +
+                               '📄 행사 설명: "' + currentSettings.eventDescription + '"<br>' +
+                               '📋 수동 안내: "' + currentSettings.manualInstruction.substring(0, 30) + '..."<br>' +
+                               '📍 위치: ' + currentSettings.location.name + '<br>' +
+                               '📏 GPS 반경: ' + currentSettings.location.radius + 'm<br><br>' +
+                               '💡 <strong>출석체크 페이지를 새로고침(F5)하면 변경사항이 적용됩니다.</strong>';
+
+            showModal('success', '설정 저장 완료', changesSummary);
+            
+            setTimeout(function() {
+                if (window.dispatchEvent) {
+                    var storageEvent = new Event('storage');
+                    window.dispatchEvent(storageEvent);
+                }
+            }, 100);
         }
 
         // 설정 디버깅 함수
@@ -649,15 +684,14 @@
             console.log('attendanceConfig:', localStorage.getItem('attendanceConfig'));
             console.log('eventTitle:', localStorage.getItem('eventTitle'));
             console.log('eventDescription:', localStorage.getItem('eventDescription'));
-            console.log('manualInstruction:', localStorage.getItem('manualInstruction'));
-            console.log('allowedLocations:', localStorage.getItem('allowedLocations'));
+            console.log('allowedLocation:', localStorage.getItem('allowedLocation'));
             
             var debugInfo = [];
             debugInfo.push('📊 localStorage 키 확인:');
             debugInfo.push('• attendanceConfig: ' + (localStorage.getItem('attendanceConfig') ? '✅ 있음' : '❌ 없음'));
             debugInfo.push('• eventTitle: ' + (localStorage.getItem('eventTitle') ? '✅ 있음' : '❌ 없음'));
             debugInfo.push('• eventDescription: ' + (localStorage.getItem('eventDescription') ? '✅ 있음' : '❌ 없음'));
-            debugInfo.push('• allowedLocations: ' + (localStorage.getItem('allowedLocations') ? '✅ 있음' : '❌ 없음'));
+            debugInfo.push('• allowedLocation: ' + (localStorage.getItem('allowedLocation') ? '✅ 있음' : '❌ 없음'));
             
             try {
                 var config = JSON.parse(localStorage.getItem('attendanceConfig'));
@@ -666,7 +700,7 @@
                     debugInfo.push('📝 현재 설정 내용:');
                     debugInfo.push('• 제목: ' + (config.eventTitle || '없음'));
                     debugInfo.push('• 설명: ' + (config.eventDescription || '없음'));
-                    debugInfo.push('• 위치 수: ' + (config.allowedLocations ? config.allowedLocations.length : 0) + '개');
+                    debugInfo.push('• 위치: ' + (config.allowedLocation ? config.allowedLocation.name : '없음'));
                 }
             } catch (e) {
                 debugInfo.push('⚠️ attendanceConfig 파싱 오류: ' + e.message);
@@ -712,18 +746,18 @@
             showModal('success', '출석체크 페이지 연동 코드', codeForAttendancePage);
         }
 
-        // 강력한 중복 방지 초기화 함수 (개선됨)
+        // 강력한 중복 방지 초기화 함수 (완전 호환성)
         function resetDuplicateCheckAdvanced() {
             if (!confirm('⚠️ 강력한 중복 방지 초기화를 실행하시겠습니까?\n\n모든 중복 방지 관련 데이터를 삭제하여 모든 사용자가 다시 출석체크할 수 있게 됩니다.')) {
                 return;
             }
 
-            try {
-                var removedCount = 0;
-                var removedKeys = [];
+            var removedCount = 0;
+            var removedKeys = [];
+            
+            if (window.localStorage) {
                 var allKeys = Object.keys(localStorage);
                 
-                // 보호할 키 목록 (이 키들은 절대 삭제하지 않음)
                 var protectedKeys = [
                     CONFIG.STORAGE_PREFIX + 'settings',
                     CONFIG.STORAGE_PREFIX + 'adminPassword', 
@@ -734,18 +768,17 @@
                     'eventTitle',
                     'eventDescription',
                     'manualInstruction',
+                    'allowedLocation',
                     'allowedLocations'
                 ];
                 
                 console.log('전체 localStorage 키:', allKeys.length + '개');
                 console.log('보호할 키:', protectedKeys);
                 
-                // 모든 키를 확인하여 중복 방지 관련 키 삭제
                 for (var i = 0; i < allKeys.length; i++) {
                     var key = allKeys[i];
                     var shouldRemove = false;
                     
-                    // 보호 키는 건드리지 않음
                     if (protectedKeys.indexOf(key) !== -1) {
                         console.log('보호된 키 건너뜀:', key);
                         continue;
@@ -753,22 +786,20 @@
                     
                     var keyLower = key.toLowerCase();
                     
-                    // 확실히 중복 방지용으로 보이는 키 패턴들
                     var suspiciousPatterns = [
-                        'attendance_',     // attendance_로 시작하는 모든 키
-                        'user_attended',   // 사용자 출석 기록
-                        'device_',         // 기기 관련
-                        'fingerprint',     // 핑거프린트
-                        '_submitted',      // 제출 완료 표시
-                        '_checked',        // 체크 완료 표시
-                        '_verified',       // 검증 완료 표시
-                        'duplicate_',      // 중복 방지
-                        'session_',        // 세션 관련
-                        'temp_',           // 임시 데이터
-                        'cache_'           // 캐시 데이터
+                        'attendance_',
+                        'user_attended',
+                        'device_',
+                        'fingerprint',
+                        '_submitted',
+                        '_checked',
+                        '_verified',
+                        'duplicate_',
+                        'session_',
+                        'temp_',
+                        'cache_'
                     ];
                     
-                    // 패턴 매칭으로 삭제할 키 찾기
                     for (var j = 0; j < suspiciousPatterns.length; j++) {
                         if (keyLower.indexOf(suspiciousPatterns[j]) !== -1) {
                             shouldRemove = true;
@@ -776,7 +807,6 @@
                         }
                     }
                     
-                    // 추가적으로 출석 관련 키워드 조합 체크
                     if (!shouldRemove) {
                         var attendanceKeywords = ['attend', 'submit', 'check', 'complete', 'verify'];
                         var deviceKeywords = ['user', 'device', 'browser', 'client'];
@@ -793,7 +823,6 @@
                         }
                     }
                     
-                    // 삭제 실행
                     if (shouldRemove) {
                         console.log('삭제할 키:', key);
                         localStorage.removeItem(key);
@@ -801,77 +830,67 @@
                         removedCount++;
                     }
                 }
-                
-                // sessionStorage 완전 초기화 (보다 확실하게)
-                try {
-                    sessionStorage.clear();
-                    console.log('sessionStorage 완전 초기화 완료');
-                } catch (sessionError) {
-                    console.warn('sessionStorage 초기화 실패:', sessionError);
+            }
+            
+            if (window.sessionStorage) {
+                sessionStorage.clear();
+                console.log('sessionStorage 완전 초기화 완료');
+            }
+            
+            var cookies = document.cookie.split(';');
+            for (var m = 0; m < cookies.length; m++) {
+                var cookie = cookies[m].trim();
+                if (cookie.indexOf('attendance_') === 0 || 
+                    cookie.indexOf('user_') === 0 ||
+                    cookie.indexOf('device_') === 0) {
+                    var cookieName = cookie.split('=')[0];
+                    document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                    console.log('쿠키 삭제:', cookieName);
                 }
-                
-                // 쿠키도 정리 (중복 방지 관련)
-                try {
-                    var cookies = document.cookie.split(';');
-                    for (var m = 0; m < cookies.length; m++) {
-                        var cookie = cookies[m].trim();
-                        if (cookie.indexOf('attendance_') === 0 || 
-                            cookie.indexOf('user_') === 0 ||
-                            cookie.indexOf('device_') === 0) {
-                            var cookieName = cookie.split('=')[0];
-                            document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-                            console.log('쿠키 삭제:', cookieName);
-                        }
-                    }
-                } catch (cookieError) {
-                    console.warn('쿠키 정리 실패:', cookieError);
+            }
+            
+            var message = '🚀 강력한 중복 방지 초기화가 완료되었습니다!<br><br>' +
+                         '✅ localStorage에서 삭제된 키: <strong>' + removedCount + '개</strong><br>' +
+                         '✅ sessionStorage 완전 초기화<br>' +
+                         '✅ 중복 방지 쿠키 정리<br><br>';
+            
+            if (removedKeys.length > 0) {
+                message += '🗑️ 삭제된 키 목록:<br>';
+                for (var n = 0; n < Math.min(removedKeys.length, 10); n++) {
+                    message += '• ' + removedKeys[n] + '<br>';
                 }
-                
-                var message = '🚀 강력한 중복 방지 초기화가 완료되었습니다!<br><br>' +
-                             '✅ localStorage에서 삭제된 키: <strong>' + removedCount + '개</strong><br>' +
-                             '✅ sessionStorage 완전 초기화<br>' +
-                             '✅ 중복 방지 쿠키 정리<br><br>';
-                
-                if (removedKeys.length > 0) {
-                    message += '🗑️ 삭제된 키 목록:<br>';
-                    for (var n = 0; n < Math.min(removedKeys.length, 10); n++) {
-                        message += '• ' + removedKeys[n] + '<br>';
-                    }
-                    if (removedKeys.length > 10) {
-                        message += '• ... 및 ' + (removedKeys.length - 10) + '개 더<br>';
-                    }
-                    message += '<br>';
+                if (removedKeys.length > 10) {
+                    message += '• ... 및 ' + (removedKeys.length - 10) + '개 더<br>';
                 }
-                
-                message += '📱 이제 출석체크 페이지를 <strong>새로고침(F5)</strong>하세요!';
-                
-                showModal('success', '강력한 초기화 완료!', message);
-                refreshStatsQuiet();
-                
-                // 콘솔에 상세 로그 출력
-                console.log('=== 강력한 중복 방지 초기화 완료 ===');
-                console.log('삭제된 키 수:', removedCount);
-                console.log('삭제된 키 목록:', removedKeys);
+                message += '<br>';
+            }
+            
+            message += '📱 이제 출석체크 페이지를 <strong>새로고침(F5)</strong>하세요!';
+            
+            showModal('success', '강력한 초기화 완료!', message);
+            refreshStatsQuiet();
+            
+            console.log('=== 강력한 중복 방지 초기화 완료 ===');
+            console.log('삭제된 키 수:', removedCount);
+            console.log('삭제된 키 목록:', removedKeys);
+            
+            if (window.localStorage) {
                 console.log('남은 localStorage 키:', Object.keys(localStorage));
-                
-            } catch (e) {
-                console.error('강력한 중복 방지 초기화 오류:', e);
-                showModal('error', '초기화 실패', '강력한 중복 방지 초기화 중 오류가 발생했습니다.<br>오류: ' + e.message);
             }
         }
 
-        // 일반 중복 방지 초기화 (개선됨)
+        // 일반 중복 방지 초기화 (완전 호환성)
         function resetDuplicateCheck() {
             if (!confirm('일반 중복 방지 기록을 초기화하시겠습니까?\n모든 사용자가 다시 출석 체크할 수 있게 됩니다.')) {
                 return;
             }
 
-            try {
-                var removedCount = 0;
-                var removedKeys = [];
+            var removedCount = 0;
+            var removedKeys = [];
+            
+            if (window.localStorage) {
                 var allKeys = Object.keys(localStorage);
                 
-                // 보호할 키들
                 var protectedKeys = [
                     CONFIG.STORAGE_PREFIX + 'settings',
                     CONFIG.STORAGE_PREFIX + 'adminPassword',
@@ -882,10 +901,10 @@
                     'eventTitle',
                     'eventDescription',
                     'manualInstruction',
+                    'allowedLocation',
                     'allowedLocations'
                 ];
                 
-                // 일반적인 중복 방지 패턴들
                 var duplicatePreventionPatterns = [
                     'attendance_submitted',
                     'userAttended',
@@ -903,17 +922,64 @@
                     var key = allKeys[i];
                     var shouldRemove = false;
                     
-                    // 보호된 키는 건드리지 않음
                     if (protectedKeys.indexOf(key) !== -1) {
                         continue;
                     }
                     
-                    // attendance_로 시작하는 키 중 데이터가 아닌 것들
                     if (key.indexOf('attendance_') === 0) {
                         shouldRemove = true;
                     }
                     
-                    // 명확한 중복 방지 패턴 체크
+                    if (!shouldRemove) {
+                        for (var j = 0; j < duplicatePreventionPatterns.length; j++) {
+                            if (key === duplicatePreventionPatterns[j] || 
+                                key.indexOf(duplicatePreventionPatterns[j]) !== -1) {
+                                shouldRemove = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (shouldRemove) {
+                        console.log('일반 초기화로 삭제할 키:', key);
+                        localStorage.removeItem(key);
+                        removedKeys.push(key);
+                        removedCount++;
+                    }
+                }
+            }
+            
+            if (window.sessionStorage) {
+                sessionStorage.clear();
+            }
+            
+            var message = '✅ 일반 중복 방지 초기화가 완료되었습니다!<br><br>' +
+                         '🗑️ 삭제된 기록: <strong>' + removedCount + '개</strong><br>' +
+                         '💾 sessionStorage 초기화<br><br>';
+            
+            if (removedKeys.length > 0) {
+                message += '삭제된 키 목록:<br>';
+                for (var k = 0; k < Math.min(removedKeys.length, 5); k++) {
+                    message += '• ' + removedKeys[k] + '<br>';
+                }
+                if (removedKeys.length > 5) {
+                    message += '• ... 및 ' + (removedKeys.length - 5) + '개 더<br>';
+                }
+                message += '<br>';
+            }
+            
+            message += '📱 출석체크 페이지를 새로고침하세요!';
+            
+            showModal('success', '초기화 완료', message);
+            
+            console.log('일반 중복 방지 초기화 완료. 삭제된 키:', removedKeys);
+        }        continue;
+                    }
+                    
+                    if (key.indexOf('attendance_') === 0) {
+                        shouldRemove = true;
+                    }
+                    
                     if (!shouldRemove) {
                         for (var j = 0; j < duplicatePreventionPatterns.length; j++) {
                             if (key === duplicatePreventionPatterns[j] || 
@@ -932,7 +998,6 @@
                     }
                 }
                 
-                // sessionStorage 클리어
                 sessionStorage.clear();
                 
                 var message = '✅ 일반 중복 방지 초기화가 완료되었습니다!<br><br>' +
@@ -962,97 +1027,197 @@
             }
         }
 
-        // 위치 렌더링
-        function renderLocations() {
-            var container = document.getElementById('locationsContainer');
-            container.innerHTML = '';
-
-            for (var i = 0; i < currentSettings.locations.length; i++) {
-                var location = currentSettings.locations[i];
-                var locationDiv = document.createElement('div');
-                locationDiv.className = 'location-item';
-                locationDiv.innerHTML = 
-                    '<div class="flex justify-between items-start mb-3">' +
-                        '<h4 class="font-semibold text-base">위치 ' + (i + 1) + '</h4>' +
-                        '<button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="removeLocation(' + i + ')">삭제</button>' +
-                    '</div>' +
-                    '<div class="grid grid-cols-1 gap-3">' +
-                        '<div>' +
-                            '<label class="block text-sm font-medium mb-1">장소명</label>' +
-                            '<input type="text" value="' + location.name + '" ' +
-                                   'onchange="updateLocation(' + i + ', \'name\', this.value)" ' +
-                                   'class="w-full p-2 border rounded">' +
-                        '</div>' +
-                        '<div class="grid grid-cols-2 gap-2">' +
-                            '<div>' +
-                                '<label class="block text-sm font-medium mb-1">반경(m)</label>' +
-                                '<input type="number" value="' + location.radius + '" min="5" max="100" ' +
-                                       'onchange="updateLocation(' + i + ', \'radius\', this.value)" ' +
-                                       'class="w-full p-2 border rounded">' +
-                            '</div>' +
-                            '<div>' +
-                                '<label class="block text-sm font-medium mb-1">위도</label>' +
-                                '<input type="number" step="0.000001" value="' + location.lat + '" ' +
-                                       'onchange="updateLocation(' + i + ', \'lat\', this.value)" ' +
-                                       'class="w-full p-2 border rounded">' +
-                            '</div>' +
-                        '</div>' +
-                        '<div>' +
-                            '<label class="block text-sm font-medium mb-1">경도</label>' +
-                            '<input type="number" step="0.000001" value="' + location.lng + '" ' +
-                                   'onchange="updateLocation(' + i + ', \'lng\', this.value)" ' +
-                                   'class="w-full p-2 border rounded">' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="mt-2 text-center">' +
-                        '<a href="https://www.google.com/maps?q=' + location.lat + ',' + location.lng + '" target="_blank" ' +
-                           'class="text-blue-600 hover:underline text-sm">📍 지도에서 확인</a>' +
-                    '</div>';
-                container.appendChild(locationDiv);
+        // 지도 관련 함수들
+        function loadGoogleMap() {
+            var mapContainer = document.getElementById('mapContainer');
+            var loadMapBtn = document.getElementById('loadMapBtn');
+            
+            if (window.google && window.google.maps) {
+                initializeMap();
+                return;
             }
-
-            if (currentSettings.locations.length < 3) {
-                var addButton = document.createElement('div');
-                addButton.className = 'text-center mt-4';
-                addButton.innerHTML = 
-                    '<button class="btn btn-primary" onclick="addLocation()">' +
-                        '➕ 새 위치 추가' +
-                    '</button>';
-                container.appendChild(addButton);
-            }
+            
+            loadMapBtn.textContent = '지도 로딩 중...';
+            loadMapBtn.disabled = true;
+            
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initializeMap';
+            script.onerror = function() {
+                showSimpleMap();
+            };
+            document.head.appendChild(script);
         }
-
-        // 위치 관련 함수들
-        function addLocation() {
-            if (currentSettings.locations.length < 3) {
-                currentSettings.locations.push({
-                    name: '새 장소 ' + (currentSettings.locations.length + 1),
-                    lat: 37.5665,
-                    lng: 126.9780,
-                    radius: 30
+        
+        function initializeMap() {
+            var mapContainer = document.getElementById('mapContainer');
+            mapContainer.innerHTML = '';
+            
+            var initialLat = currentSettings.location.lat || 37.228848;
+            var initialLng = currentSettings.location.lng || 127.167855;
+            
+            try {
+                map = new google.maps.Map(mapContainer, {
+                    center: { lat: initialLat, lng: initialLng },
+                    zoom: 17,
+                    mapTypeId: 'roadmap'
                 });
-                renderLocations();
-            } else {
-                showModal('warning', '추가 불가', '최대 3개의 위치만 설정할 수 있습니다.');
+                
+                marker = new google.maps.Marker({
+                    position: { lat: initialLat, lng: initialLng },
+                    map: map,
+                    draggable: true,
+                    title: '행사 위치'
+                });
+                
+                map.addListener('click', function(e) {
+                    var lat = e.latLng.lat();
+                    var lng = e.latLng.lng();
+                    
+                    marker.setPosition(e.latLng);
+                    updateLocationFromMap(lat, lng);
+                });
+                
+                marker.addListener('dragend', function(e) {
+                    var lat = e.latLng.lat();
+                    var lng = e.latLng.lng();
+                    
+                    updateLocationFromMap(lat, lng);
+                });
+                
+                showModal('success', '지도 로드 완료', '지도를 클릭하거나 마커를 드래그하여 위치를 선택하세요.');
+                
+            } catch (error) {
+                console.error('구글 지도 초기화 오류:', error);
+                showSimpleMap();
             }
         }
-
-        function removeLocation(index) {
-            if (currentSettings.locations.length > 1) {
-                currentSettings.locations.splice(index, 1);
-                renderLocations();
-            } else {
-                showModal('warning', '삭제 불가', '최소 1개의 위치는 설정되어야 합니다.');
+        
+        function showSimpleMap() {
+            var mapContainer = document.getElementById('mapContainer');
+            var loadMapBtn = document.getElementById('loadMapBtn');
+            
+            mapContainer.innerHTML = 
+                '<div style="height: 100%; display: flex; flex-direction: column; padding: 20px; justify-content: center; align-items: center;">' +
+                '<div style="font-size: 24px; margin-bottom: 15px;">📍</div>' +
+                '<div style="font-weight: 600; margin-bottom: 10px; color: #374151;">좌표 직접 입력</div>' +
+                '<div style="width: 100%; max-width: 300px;">' +
+                '<div style="margin-bottom: 10px;">' +
+                '<label style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 3px;">위도 (Latitude)</label>' +
+                '<input type="number" step="0.000001" id="manualLat" value="' + currentSettings.location.lat + '" ' +
+                'style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">' +
+                '</div>' +
+                '<div style="margin-bottom: 15px;">' +
+                '<label style="display: block; font-size: 12px; color: #6b7280; margin-bottom: 3px;">경도 (Longitude)</label>' +
+                '<input type="number" step="0.000001" id="manualLng" value="' + currentSettings.location.lng + '" ' +
+                'style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 4px;">' +
+                '</div>' +
+                '<button type="button" onclick="updateLocationFromManual()" ' +
+                'style="width: 100%; padding: 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">' +
+                '좌표 적용' +
+                '</button>' +
+                '</div>' +
+                '<div style="font-size: 11px; color: #9ca3af; text-align: center; margin-top: 15px;">' +
+                '구글 지도 API를 사용하려면<br>API 키를 설정해주세요' +
+                '</div>' +
+                '</div>';
+            
+            loadMapBtn.textContent = '🗺️ 지도 로드';
+            loadMapBtn.disabled = false;
+        }
+        
+        function updateLocationFromMap(lat, lng) {
+            currentSettings.location.lat = lat;
+            currentSettings.location.lng = lng;
+            
+            updateLocationUI();
+            
+            showModal('success', '위치 업데이트', 
+                '새로운 좌표가 설정되었습니다.<br>위도: ' + lat.toFixed(6) + '<br>경도: ' + lng.toFixed(6));
+        }
+        
+        function updateLocationFromManual() {
+            var latEl = document.getElementById('manualLat');
+            var lngEl = document.getElementById('manualLng');
+            
+            if (!latEl || !lngEl) return;
+            
+            var lat = parseFloat(latEl.value);
+            var lng = parseFloat(lngEl.value);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                showModal('warning', '좌표 오류', '올바른 위도와 경도를 입력해주세요.');
+                return;
+            }
+            
+            currentSettings.location.lat = lat;
+            currentSettings.location.lng = lng;
+            
+            updateLocationUI();
+            
+            showModal('success', '위치 업데이트', 
+                '수동으로 좌표가 설정되었습니다.<br>위도: ' + lat.toFixed(6) + '<br>경도: ' + lng.toFixed(6));
+        }
+        
+        function updateLocationUI() {
+            var nameEl = document.getElementById('locationName');
+            var radiusEl = document.getElementById('locationRadius');
+            var currentNameEl = document.getElementById('currentLocationName');
+            var currentCoordsEl = document.getElementById('currentLocationCoords');
+            var currentRadiusEl = document.getElementById('currentLocationRadius');
+            
+            if (nameEl && !nameEl.value) {
+                nameEl.value = currentSettings.location.name || '';
+            }
+            if (radiusEl) {
+                radiusEl.value = currentSettings.location.radius || 30;
+            }
+            
+            if (currentNameEl) {
+                currentNameEl.textContent = currentSettings.location.name || '설정되지 않음';
+            }
+            if (currentCoordsEl) {
+                currentCoordsEl.textContent = currentSettings.location.lat.toFixed(6) + ', ' + currentSettings.location.lng.toFixed(6);
+            }
+            if (currentRadiusEl) {
+                currentRadiusEl.textContent = currentSettings.location.radius || 30;
             }
         }
-
-        function updateLocation(index, field, value) {
-            if (field === 'lat' || field === 'lng') {
-                currentSettings.locations[index][field] = parseFloat(value);
-            } else if (field === 'radius') {
-                currentSettings.locations[index][field] = parseInt(value);
-            } else {
-                currentSettings.locations[index][field] = value;
+        
+        function saveLocation() {
+            try {
+                var nameEl = document.getElementById('locationName');
+                var radiusEl = document.getElementById('locationRadius');
+                
+                var locationName = nameEl ? nameEl.value.trim() : '';
+                var locationRadius = radiusEl ? parseInt(radiusEl.value) : 30;
+                
+                if (!locationName) {
+                    showModal('warning', '입력 오류', '장소명을 입력해주세요.');
+                    if (nameEl) nameEl.focus();
+                    return;
+                }
+                
+                if (isNaN(locationRadius) || locationRadius < 5 || locationRadius > 100) {
+                    showModal('warning', '반경 오류', 'GPS 허용 반경은 5~100m 사이로 설정해주세요.');
+                    if (radiusEl) radiusEl.focus();
+                    return;
+                }
+                
+                currentSettings.location.name = locationName;
+                currentSettings.location.radius = locationRadius;
+                
+                localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
+                localStorage.setItem('allowedLocation', JSON.stringify(currentSettings.location));
+                localStorage.setItem('allowedLocations', JSON.stringify([currentSettings.location]));
+                
+                updateLocationUI();
+                
+                showModal('success', '위치 저장 완료', 
+                    '위치 정보가 저장되었습니다.<br>장소: ' + locationName + '<br>반경: ' + locationRadius + 'm');
+                
+            } catch (e) {
+                console.error('위치 저장 오류:', e);
+                showModal('error', '저장 실패', '위치 설정 저장 중 오류가 발생했습니다.');
             }
         }
 
@@ -1069,15 +1234,21 @@
                     var latitude = position.coords.latitude;
                     var longitude = position.coords.longitude;
                     
-                    if (currentSettings.locations.length > 0) {
-                        currentSettings.locations[0].lat = latitude;
-                        currentSettings.locations[0].lng = longitude;
-                        currentSettings.locations[0].name = '현재 위치';
-                        renderLocations();
-                        closeModal();
-                        showModal('success', '위치 가져오기 성공', 
-                            '현재 위치가 설정되었습니다.<br>위도: ' + latitude.toFixed(6) + '<br>경도: ' + longitude.toFixed(6));
+                    currentSettings.location.lat = latitude;
+                    currentSettings.location.lng = longitude;
+                    currentSettings.location.name = '현재 위치';
+                    
+                    updateLocationUI();
+                    
+                    if (window.google && window.google.maps && map && marker) {
+                        var newPos = { lat: latitude, lng: longitude };
+                        map.setCenter(newPos);
+                        marker.setPosition(newPos);
                     }
+                    
+                    closeModal();
+                    showModal('success', '위치 가져오기 성공', 
+                        '현재 위치가 설정되었습니다.<br>위도: ' + latitude.toFixed(6) + '<br>경도: ' + longitude.toFixed(6));
                 },
                 function(error) {
                     var errorMessage = '위치를 가져올 수 없습니다.';
@@ -1103,17 +1274,7 @@
             );
         }
 
-        function saveLocations() {
-            try {
-                localStorage.setItem(CONFIG.STORAGE_PREFIX + 'settings', JSON.stringify(currentSettings));
-                localStorage.setItem('allowedLocations', JSON.stringify(currentSettings.locations));
-                showModal('success', '저장 완료', '위치 설정이 성공적으로 저장되었습니다.');
-            } catch (e) {
-                showModal('error', '저장 실패', '위치 설정 저장 중 오류가 발생했습니다.');
-            }
-        }
-
-        // 통계 관련 함수들 (개선됨)
+        // 통계 관련 함수들
         function refreshStatsQuiet() {
             try {
                 var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
@@ -1173,7 +1334,7 @@
             }
         }
 
-        // 출석 데이터 내보내기 함수 추가
+        // 출석 데이터 내보내기 함수
         function exportAttendanceData() {
             try {
                 var attendees = JSON.parse(localStorage.getItem('attendanceData') || '[]');
@@ -1191,268 +1352,4 @@
                         '"' + (attendee.name || '') + '"',
                         '"' + (attendee.affiliation || attendee.organization || '') + '"',
                         '"' + (attendee.email || '') + '"',
-                        '"' + (attendee.phone || '') + '"',
-                        '"' + (attendee.location || '') + '"',
-                        '"' + (attendee.coordinates || '') + '"',
-                        '"' + (attendee.timestamp ? new Date(attendee.timestamp).toLocaleString('ko-KR') : '') + '"'
-                    ].join(',');
-                    csvContent += row + "\n";
-                }
-
-                var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                var link = document.createElement("a");
-                var url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", "출석데이터_" + new Date().toISOString().split('T')[0] + ".csv");
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-                showModal('success', '내보내기 완료', 
-                    '출석 데이터가 CSV 파일로 다운로드되었습니다.<br>' +
-                    '총 ' + attendees.length + '명의 데이터가 포함되었습니다.');
-
-            } catch (e) {
-                console.error('데이터 내보내기 오류:', e);
-                showModal('error', '내보내기 실패', '데이터 내보내기 중 오류가 발생했습니다.');
-            }
-        }
-
-        // 시스템 상태 확인 (개선됨)
-        function checkCurrentStatus() {
-            try {
-                var statusInfo = [];
-                var allLocalKeys = Object.keys(localStorage);
-                var sessionKeys = Object.keys(sessionStorage);
-                
-                var attendanceData = localStorage.getItem('attendanceData');
-                var attendeeCount = 0;
-                if (attendanceData) {
-                    var parsed = JSON.parse(attendanceData);
-                    attendeeCount = parsed.length;
-                }
-                
-                statusInfo.push('👥 총 참석자: ' + attendeeCount + '명');
-                statusInfo.push('📦 localStorage 키: ' + allLocalKeys.length + '개');
-                statusInfo.push('💾 sessionStorage 키: ' + sessionKeys.length + '개');
-                
-                // 중복 방지 키 찾기 (더 정확하게)
-                var duplicateKeys = [];
-                var protectedKeys = [
-                    CONFIG.STORAGE_PREFIX + 'settings',
-                    CONFIG.STORAGE_PREFIX + 'adminPassword',
-                    'attendanceData',
-                    'attendanceConfig',
-                    'eventConfig',
-                    'checkConfig',
-                    'eventTitle',
-                    'eventDescription',
-                    'manualInstruction',
-                    'allowedLocations'
-                ];
-                
-                for (var i = 0; i < allLocalKeys.length; i++) {
-                    var key = allLocalKeys[i];
-                    
-                    // 보호된 키는 제외
-                    if (protectedKeys.indexOf(key) !== -1) {
-                        continue;
-                    }
-                    
-                    var keyLower = key.toLowerCase();
-                    
-                    // 중복 방지 관련 키 패턴 체크
-                    if (key.indexOf('attendance_') === 0 ||
-                        keyLower.indexOf('submitted') !== -1 ||
-                        keyLower.indexOf('attended') !== -1 ||
-                        keyLower.indexOf('device_') === 0 ||
-                        keyLower.indexOf('user_') === 0 ||
-                        keyLower.indexOf('fingerprint') !== -1 ||
-                        keyLower.indexOf('duplicate') !== -1 ||
-                        (keyLower.indexOf('attend') !== -1 && keyLower.indexOf('check') !== -1)) {
-                        duplicateKeys.push(key);
-                    }
-                }
-                
-                statusInfo.push('🔒 중복방지 키: ' + duplicateKeys.length + '개');
-                
-                if (duplicateKeys.length > 0) {
-                    statusInfo.push('');
-                    statusInfo.push('⚠️ 발견된 중복방지 키들:');
-                    for (var j = 0; j < Math.min(duplicateKeys.length, 8); j++) {
-                        statusInfo.push('  • ' + duplicateKeys[j]);
-                    }
-                    if (duplicateKeys.length > 8) {
-                        statusInfo.push('  • ... 및 ' + (duplicateKeys.length - 8) + '개 더');
-                    }
-                    statusInfo.push('');
-                    statusInfo.push('🔧 권장: <strong>강력한 중복방지 초기화</strong> 실행');
-                } else {
-                    statusInfo.push('✅ 모든 기기에서 출석체크 가능');
-                }
-                
-                if (sessionKeys.length > 0) {
-                    statusInfo.push('⚠️ sessionStorage에 ' + sessionKeys.length + '개 키 존재');
-                    statusInfo.push('  (attendance_submitted 등이 있을 수 있음)');
-                }
-                
-                // 쿠키 상태 확인
-                var cookies = document.cookie.split(';').filter(c => c.trim());
-                var attendanceCookies = cookies.filter(cookie => {
-                    var cookieName = cookie.split('=')[0].trim().toLowerCase();
-                    return cookieName.indexOf('attendance') !== -1 || 
-                           cookieName.indexOf('user_') === 0 || 
-                           cookieName.indexOf('device_') === 0;
-                });
-                
-                if (attendanceCookies.length > 0) {
-                    statusInfo.push('🍪 중복방지 쿠키: ' + attendanceCookies.length + '개');
-                }
-                
-                // 실제 확인 방법 안내
-                statusInfo.push('');
-                statusInfo.push('📋 <strong>실제 테스트 방법:</strong>');
-                statusInfo.push('1. 출석체크 페이지에서 한 번 출석 완료');
-                statusInfo.push('2. 새로고침 후 "이미 출석 체크 완료" 메시지 확인');
-                statusInfo.push('3. 중복방지 초기화 후 다시 출석 가능한지 확인');
-                
-                var message = statusInfo.join('<br>');
-                showModal('success', '현재 상태 보고서', message);
-                
-                // 콘솔에도 상세 정보 출력
-                console.log('=== 시스템 상태 확인 ===');
-                console.log('참석자 수:', attendeeCount);
-                console.log('localStorage 키:', allLocalKeys);
-                console.log('중복방지 키:', duplicateKeys);
-                console.log('sessionStorage 키:', sessionKeys);
-                console.log('중복방지 쿠키:', attendanceCookies);
-                
-            } catch (e) {
-                console.error('상태 확인 오류:', e);
-                showModal('error', '상태 확인 실패', '시스템 상태를 확인할 수 없습니다.<br>오류: ' + e.message);
-            }
-        }
-
-        // 모든 데이터 삭제
-        function clearAllData() {
-            if (!confirm('정말로 모든 출석 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-                return;
-            }
-
-            var confirmText = prompt('정말로 삭제하시겠습니까? "DELETE"를 입력하세요:');
-            if (confirmText !== 'DELETE') {
-                return;
-            }
-
-            try {
-                var beforeCount = 0;
-                var attendanceData = localStorage.getItem('attendanceData');
-                if (attendanceData) {
-                    beforeCount = JSON.parse(attendanceData).length;
-                }
-
-                localStorage.removeItem('attendanceData');
-                localStorage.setItem('attendanceData', JSON.stringify([]));
-                
-                var keys = Object.keys(localStorage);
-                var removedCount = 0;
-                for (var i = 0; i < keys.length; i++) {
-                    if (keys[i].indexOf('attendance_') === 0 && 
-                        keys[i] !== CONFIG.STORAGE_PREFIX + 'settings' && 
-                        keys[i] !== CONFIG.STORAGE_PREFIX + 'adminPassword') {
-                        localStorage.removeItem(keys[i]);
-                        removedCount++;
-                    }
-                }
-
-                sessionStorage.clear();
-                refreshStatsQuiet();
-                updateRecentAttendees();
-
-                showModal('success', '삭제 완료', 
-                    '모든 출석 데이터가 삭제되었습니다.<br>' +
-                    '삭제된 참석자: ' + beforeCount + '명<br>' +
-                    '삭제된 중복 방지 기록: ' + removedCount + '개');
-                
-            } catch (e) {
-                showModal('error', '삭제 실패', '데이터 삭제 중 오류가 발생했습니다.');
-            }
-        }
-
-        // 샘플 데이터 생성 (개선됨)
-        function generateSampleData() {
-            if (!localStorage.getItem('attendanceData')) {
-                var sampleData = [
-                    {
-                        name: '김철수',
-                        affiliation: '컴퓨터공학과',
-                        email: 'kim@example.com',
-                        phone: '010-1234-5678',
-                        timestamp: new Date(Date.now() - 3600000).toISOString(),
-                        location: '단호홀',
-                        coordinates: '37.228848,127.167855',
-                        deviceId: 'device_001'
-                    },
-                    {
-                        name: '이영희',
-                        affiliation: '전자공학과',
-                        email: 'lee@example.com',
-                        phone: '010-2345-6789',
-                        timestamp: new Date(Date.now() - 1800000).toISOString(),
-                        location: '벽소홀',
-                        coordinates: '37.228767,127.167449',
-                        deviceId: 'device_002'
-                    },
-                    {
-                        name: '박민수',
-                        affiliation: '기계공학과',
-                        email: 'park@example.com',
-                        phone: '010-3456-7890',
-                        timestamp: new Date().toISOString(),
-                        location: '대학교 본관',
-                        coordinates: '37.227239,127.166598',
-                        deviceId: 'device_003'
-                    }
-                ];
-                localStorage.setItem('attendanceData', JSON.stringify(sampleData));
-            }
-        }
-
-        // 모달 관련 함수들
-        function showModal(type, title, message) {
-            var modal = document.getElementById('modal');
-            var modalIcon = document.getElementById('modalIcon');
-            var modalTitle = document.getElementById('modalTitle');
-            var modalMessage = document.getElementById('modalMessage');
-
-            modalIcon.className = 'modal-icon ' + type;
-            switch(type) {
-                case 'success': modalIcon.textContent = '✅'; break;
-                case 'error': modalIcon.textContent = '❌'; break;
-                case 'warning': modalIcon.textContent = '⚠️'; break;
-                default: modalIcon.textContent = 'ℹ️';
-            }
-
-            modalTitle.textContent = title;
-            modalMessage.innerHTML = message;
-            modal.classList.add('active');
-
-            if (type !== 'error') {
-                setTimeout(function() {
-                    if (modal.classList.contains('active')) {
-                        closeModal();
-                    }
-                }, 3000);
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('modal').classList.remove('active');
-        }
-
-        console.log('출석체크 관리자 시스템 준비 완료');
-        console.log('버전: 2.3 (개선됨)');
-    </script>
-</body>
-</html>
+                        '"' + (attendee.phone || '') +
