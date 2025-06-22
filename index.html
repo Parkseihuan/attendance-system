@@ -353,8 +353,8 @@
 <body>
     <div class="container rounded-xl">
         <div class="header">
-            <h1>🎓 세미나실 출석 체크</h1>
-            <p>행사 참석 확인을 위해 정보를 입력해 주세요</p>
+            <h1 id="eventTitle">🎓 세미나실 출석 체크</h1>
+            <p id="eventDescription">행사 참석 확인을 위해 정보를 입력해 주세요</p>
         </div>
 
         <div id="attendanceForm">
@@ -400,9 +400,9 @@
                 <button type="submit" class="submit-btn rounded-lg" id="submitBtn">출석 체크 완료</button>
             </form>
 
-            <div class="manual-instruction rounded-r-lg">
+            <div class="manual-instruction rounded-r-lg" id="manualInstructionBox">
                 <h3>📱 휴대폰 사용이 어려우신 경우</h3>
-                <p>행사장 앞쪽에 비치된 <strong>'참석자 명부'</strong>에 직접 기재해 주시기 바랍니다.</p>
+                <p id="manualInstructionText">행사장 앞쪽에 비치된 <strong>'참석자 명부'</strong>에 직접 기재해 주시기 바랍니다.</p>
             </div>
 
             <div class="device-info rounded-lg" id="deviceInfo"></div>
@@ -415,9 +415,9 @@
             <div class="blocked-message">
                 <h2>🚫 이미 출석 체크 완료</h2>
                 <p>이 기기에서는 이미 출석 체크가 완료되었습니다.</p>
-                <div class="manual-instruction rounded-r-lg">
+                <div class="manual-instruction rounded-r-lg" id="blockedManualInstruction">
                     <h3>다른 방법으로 출석 체크</h3>
-                    <p>행사장 앞쪽에 비치된 <strong>'참석자 명부'</strong>에 직접 기재해 주세요.</p>
+                    <p id="blockedManualInstructionText">행사장 앞쪽에 비치된 <strong>'참석자 명부'</strong>에 직접 기재해 주세요.</p>
                 </div>
             </div>
         </div>
@@ -436,6 +436,113 @@
     </div>
 
     <script>
+        // 관리자 설정 불러오기 함수 (개선됨)
+        function loadAdminSettings() {
+            try {
+                console.log('관리자 설정 로드 시작...');
+                
+                // 여러 키로 설정 확인
+                var config = localStorage.getItem('attendanceConfig') || 
+                           localStorage.getItem('eventConfig') || 
+                           localStorage.getItem('checkConfig');
+                
+                if (config) {
+                    var settings = JSON.parse(config);
+                    console.log('로드된 설정:', settings);
+                    
+                    // 제목 업데이트
+                    if (settings.eventTitle) {
+                        var titleEl = document.getElementById('eventTitle');
+                        if (titleEl) {
+                            titleEl.textContent = settings.eventTitle;
+                            document.title = settings.eventTitle; // 브라우저 탭 제목도 변경
+                            console.log('제목 업데이트:', settings.eventTitle);
+                        }
+                    }
+                    
+                    // 설명 업데이트
+                    if (settings.eventDescription) {
+                        var descEl = document.getElementById('eventDescription');
+                        if (descEl) {
+                            descEl.textContent = settings.eventDescription;
+                            console.log('설명 업데이트:', settings.eventDescription);
+                        }
+                    }
+                    
+                    // 수동 안내문구 업데이트
+                    if (settings.manualInstruction) {
+                        var manualEl = document.getElementById('manualInstructionText');
+                        var blockedManualEl = document.getElementById('blockedManualInstructionText');
+                        if (manualEl) {
+                            manualEl.innerHTML = settings.manualInstruction;
+                            console.log('수동 안내문구 업데이트:', settings.manualInstruction);
+                        }
+                        if (blockedManualEl) {
+                            blockedManualEl.innerHTML = settings.manualInstruction;
+                        }
+                    }
+                    
+                    // 허용 위치 업데이트 (CONFIG.ALLOWED_LOCATIONS에 반영)
+                    if (settings.allowedLocations && settings.allowedLocations.length > 0) {
+                        CONFIG.ALLOWED_LOCATIONS = settings.allowedLocations;
+                        console.log('허용 위치 업데이트:', CONFIG.ALLOWED_LOCATIONS);
+                    }
+                    
+                } else {
+                    // 개별 키로 설정 확인 (fallback)
+                    var eventTitle = localStorage.getItem('eventTitle');
+                    var eventDescription = localStorage.getItem('eventDescription');
+                    var manualInstruction = localStorage.getItem('manualInstruction');
+                    var allowedLocations = localStorage.getItem('allowedLocations');
+                    
+                    if (eventTitle) {
+                        var titleEl = document.getElementById('eventTitle');
+                        if (titleEl) {
+                            titleEl.textContent = eventTitle;
+                            document.title = eventTitle;
+                            console.log('개별 키로 제목 업데이트:', eventTitle);
+                        }
+                    }
+                    
+                    if (eventDescription) {
+                        var descEl = document.getElementById('eventDescription');
+                        if (descEl) {
+                            descEl.textContent = eventDescription;
+                            console.log('개별 키로 설명 업데이트:', eventDescription);
+                        }
+                    }
+                    
+                    if (manualInstruction) {
+                        var manualEl = document.getElementById('manualInstructionText');
+                        var blockedManualEl = document.getElementById('blockedManualInstructionText');
+                        if (manualEl) {
+                            manualEl.innerHTML = manualInstruction;
+                            console.log('개별 키로 수동 안내 업데이트:', manualInstruction);
+                        }
+                        if (blockedManualEl) {
+                            blockedManualEl.innerHTML = manualInstruction;
+                        }
+                    }
+                    
+                    if (allowedLocations) {
+                        try {
+                            CONFIG.ALLOWED_LOCATIONS = JSON.parse(allowedLocations);
+                            console.log('개별 키로 위치 업데이트:', CONFIG.ALLOWED_LOCATIONS);
+                        } catch (e) {
+                            console.warn('허용 위치 파싱 오류:', e);
+                        }
+                    }
+                    
+                    console.log('개별 키로 설정 로드 완료');
+                }
+                
+                console.log('관리자 설정 로드 완료');
+                
+            } catch (e) {
+                console.error('설정 로드 오류:', e);
+            }
+        }
+
         // 구성 설정
         const CONFIG = {
             // Google Apps Script URL (실제 배포된 URL로 변경 필요)
@@ -448,7 +555,7 @@
             GPS_TIMEOUT: 15000, // 15초
             GPS_MAX_AGE: 300000, // 5분
             
-            // 허용된 위치 (실제 좌표로 변경 필요)
+            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음)
             ALLOWED_LOCATIONS: [
                 {
                     name: "단호홀",
@@ -1095,12 +1202,18 @@
             }
         }
 
-        // 페이지 로드 완료 시 시스템 초기화
+        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화
         document.addEventListener('DOMContentLoaded', () => {
             try {
+                // 관리자 설정을 먼저 로드
+                loadAdminSettings();
+                
+                // 그 다음 출석 시스템 초기화
                 new AttendanceSystem();
+                
+                console.log('페이지 로드 완료 - 관리자 설정 및 출석 시스템 초기화됨');
             } catch (error) {
-                console.error('AttendanceSystem 초기화 오류:', error);
+                console.error('시스템 초기화 오류:', error);
                 alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
         });
@@ -1113,31 +1226,6 @@
         window.addEventListener('unhandledrejection', (event) => {
             console.error('처리되지 않은 Promise 거부:', event.reason);
         });
-        
-// 관리자 설정 불러오기
-function loadAdminSettings() {
-    try {
-        var config = localStorage.getItem('attendanceConfig');
-        if (config) {
-            var settings = JSON.parse(config);
-            // 제목 업데이트
-            if (settings.eventTitle) {
-                var titleEl = document.querySelector('h1, .event-title, #eventTitle');
-                if (titleEl) titleEl.textContent = settings.eventTitle;
-            }
-            // 설명 업데이트
-            if (settings.eventDescription) {
-                var descEl = document.querySelector('.event-description, #eventDescription');
-                if (descEl) descEl.textContent = settings.eventDescription;
-            }
-        }
-    } catch (e) {
-        console.error('설정 로드 오류:', e);
-    }
-}
-
-// 페이지 로드 시 실행
-document.addEventListener('DOMContentLoaded', loadAdminSettings);
         
     </script>
 </body>
