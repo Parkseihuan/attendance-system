@@ -653,36 +653,254 @@
             console.log('💪 모바일 강제 적용 완료');
         }
 
-        // 브루트 포스 DOM 업데이트 (최후의 수단)
-        function bruteForceDOMUpdate() {
-            console.log('💥 브루트 포스 DOM 업데이트 실행');
+        // 실시간 진단 및 강제 수정 함수
+        function diagnoseMobileIssue() {
+            console.log('🔍 모바일 문제 진단 시작...');
             
-            // 모든 텍스트 요소를 강제로 다시 렌더링
-            const textElements = ['eventTitle', 'eventDescription', 'manualInstructionText', 'blockedManualInstructionText'];
+            const diagnosis = {
+                timestamp: new Date().toLocaleTimeString(),
+                localStorage: {},
+                domState: {},
+                userAgent: navigator.userAgent,
+                issues: [],
+                fixes: []
+            };
             
-            textElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    const currentContent = element.textContent || element.innerHTML;
+            // 1. localStorage 상태 진단
+            try {
+                diagnosis.localStorage.attendanceConfig = localStorage.getItem('attendanceConfig');
+                diagnosis.localStorage.eventTitle = localStorage.getItem('eventTitle');
+                diagnosis.localStorage.eventDescription = localStorage.getItem('eventDescription');
+                diagnosis.localStorage.manualInstruction = localStorage.getItem('manualInstruction');
+                diagnosis.localStorage.total_keys = Object.keys(localStorage).length;
+                
+                console.log('📦 localStorage 진단:', diagnosis.localStorage);
+            } catch (e) {
+                diagnosis.issues.push('localStorage 접근 불가: ' + e.message);
+            }
+            
+            // 2. DOM 상태 진단
+            try {
+                const titleEl = document.getElementById('eventTitle');
+                const descEl = document.getElementById('eventDescription');
+                const manualEl = document.getElementById('manualInstructionText');
+                
+                diagnosis.domState.title = titleEl ? titleEl.textContent : 'null';
+                diagnosis.domState.description = descEl ? descEl.textContent : 'null';
+                diagnosis.domState.manual = manualEl ? manualEl.innerHTML : 'null';
+                
+                console.log('🏠 DOM 상태 진단:', diagnosis.domState);
+            } catch (e) {
+                diagnosis.issues.push('DOM 접근 불가: ' + e.message);
+            }
+            
+            // 3. 불일치 감지 및 강제 수정
+            try {
+                let configData = localStorage.getItem('attendanceConfig');
+                if (!configData) {
+                    // attendanceConfig가 없으면 다른 키들로 재구성
+                    const title = localStorage.getItem('eventTitle');
+                    const desc = localStorage.getItem('eventDescription');
+                    const manual = localStorage.getItem('manualInstruction');
                     
-                    // 임시로 다른 내용으로 변경 후 원래대로 복구 (강제 리플로우)
-                    element.innerHTML = '';
-                    element.style.opacity = '0';
-                    element.offsetHeight; // 강제 리플로우
-                    
-                    element.innerHTML = currentContent;
-                    element.style.opacity = '1';
-                    element.offsetHeight; // 또 다른 강제 리플로우
-                    
-                    console.log(`💥 ${id} 브루트포스 업데이트 완료`);
+                    if (title || desc || manual) {
+                        const reconstructedConfig = {
+                            eventTitle: title || '🎓 세미나실 출석 체크',
+                            eventDescription: desc || '행사 참석 확인을 위해 정보를 입력해 주세요',
+                            manualInstruction: manual || '행사장 앞쪽에 비치된 <strong>\'참석자 명부\'</strong>에 직접 기재해 주시기 바랍니다.'
+                        };
+                        
+                        localStorage.setItem('attendanceConfig', JSON.stringify(reconstructedConfig));
+                        configData = JSON.stringify(reconstructedConfig);
+                        diagnosis.fixes.push('attendanceConfig 재구성 완료');
+                        console.log('🔧 attendanceConfig 재구성:', reconstructedConfig);
+                    }
                 }
-            });
+                
+                if (configData) {
+                    const config = JSON.parse(configData);
+                    const titleEl = document.getElementById('eventTitle');
+                    const descEl = document.getElementById('eventDescription');
+                    
+                    // 강제 업데이트 실행
+                    if (config.eventTitle && titleEl && titleEl.textContent !== config.eventTitle) {
+                        console.log(`🔧 제목 불일치 감지 및 수정: "${titleEl.textContent}" → "${config.eventTitle}"`);
+                        forceUpdateElement(titleEl, config.eventTitle);
+                        document.title = config.eventTitle;
+                        diagnosis.fixes.push(`제목 수정: ${config.eventTitle}`);
+                    }
+                    
+                    if (config.eventDescription && descEl && descEl.textContent !== config.eventDescription) {
+                        console.log(`🔧 설명 불일치 감지 및 수정: "${descEl.textContent}" → "${config.eventDescription}"`);
+                        forceUpdateElement(descEl, config.eventDescription);
+                        diagnosis.fixes.push(`설명 수정: ${config.eventDescription}`);
+                    }
+                    
+                    if (config.manualInstruction) {
+                        ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) {
+                                forceUpdateElement(el, config.manualInstruction, 'innerHTML');
+                                diagnosis.fixes.push(`수동안내 수정: ${id}`);
+                            }
+                        });
+                    }
+                }
+                
+            } catch (e) {
+                diagnosis.issues.push('설정 적용 오류: ' + e.message);
+            }
             
-            // 전체 body도 한번 건드려주기
-            document.body.style.transform = 'translateZ(0)';
+            // 4. 진단 결과 표시
+            showDiagnosisResult(diagnosis);
+            
+            return diagnosis;
+        }
+        
+        // 강력한 요소 업데이트 함수
+        function forceUpdateElement(element, content, method = 'textContent') {
+            if (!element) return;
+            
+            // 1. 기본 업데이트
+            element[method] = content;
+            
+            // 2. 모든 가능한 방법으로 업데이트
+            if (method === 'textContent') {
+                element.textContent = content;
+                element.innerText = content;
+                element.innerHTML = content;
+            } else if (method === 'innerHTML') {
+                element.innerHTML = content;
+            }
+            
+            // 3. 스타일 강제 변경으로 리렌더링 트리거
+            const originalDisplay = element.style.display;
+            const originalVisibility = element.style.visibility;
+            
+            element.style.display = 'none';
+            element.style.visibility = 'hidden';
+            element.offsetHeight; // 강제 리플로우
+            
+            element.style.display = originalDisplay || '';
+            element.style.visibility = originalVisibility || '';
+            element.offsetHeight; // 또 다른 강제 리플로우
+            
+            // 4. 클래스 조작으로 CSS 재계산 강제
+            const tempClass = 'force-update-' + Date.now();
+            element.classList.add(tempClass);
+            setTimeout(() => element.classList.remove(tempClass), 1);
+            
+            console.log(`💪 강력 업데이트 완료: ${element.id} → "${content}"`);
+        }
+        
+        // 진단 결과 표시 함수
+        function showDiagnosisResult(diagnosis) {
+            const debugDetails = document.getElementById('debugDetails');
+            if (!debugDetails) return;
+            
+            let html = `<div style="font-size: 10px; line-height: 1.3;">`;
+            html += `<strong>🔍 진단 시간:</strong> ${diagnosis.timestamp}<br>`;
+            html += `<strong>📱 모바일:</strong> ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Yes' : 'No'}<br><br>`;
+            
+            html += `<strong>📦 localStorage:</strong><br>`;
+            html += `• attendanceConfig: ${diagnosis.localStorage.attendanceConfig ? '✅' : '❌'}<br>`;
+            html += `• eventTitle: ${diagnosis.localStorage.eventTitle ? '✅' : '❌'}<br>`;
+            html += `• eventDescription: ${diagnosis.localStorage.eventDescription ? '✅' : '❌'}<br>`;
+            html += `• 총 키 수: ${diagnosis.localStorage.total_keys}<br><br>`;
+            
+            html += `<strong>🏠 현재 DOM:</strong><br>`;
+            html += `• 제목: "${diagnosis.domState.title}"<br>`;
+            html += `• 설명: "${diagnosis.domState.description}"<br><br>`;
+            
+            if (diagnosis.issues.length > 0) {
+                html += `<strong>⚠️ 발견된 문제:</strong><br>`;
+                diagnosis.issues.forEach(issue => html += `• ${issue}<br>`);
+                html += `<br>`;
+            }
+            
+            if (diagnosis.fixes.length > 0) {
+                html += `<strong>🔧 적용된 수정:</strong><br>`;
+                diagnosis.fixes.forEach(fix => html += `• ${fix}<br>`);
+                html += `<br>`;
+            }
+            
+            html += `</div>`;
+            
+            debugDetails.innerHTML = html;
+            
+            // 디버그 패널 자동 표시
+            document.getElementById('debugInfo').style.display = 'block';
+        }
+        
+        // 수동 설정 입력 기능 (최후의 수단)
+        function showManualConfigInput() {
+            const modal = document.getElementById('customModal');
+            const modalContent = modal.querySelector('.modal-content');
+            
+            modalContent.innerHTML = `
+                <div style="text-align: left;">
+                    <h3 style="text-align: center; margin-bottom: 20px;">⚙️ 수동 설정 입력</h3>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">행사 제목:</label>
+                        <input type="text" id="manualTitle" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" 
+                               value="${document.getElementById('eventTitle').textContent}">
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">행사 설명:</label>
+                        <input type="text" id="manualDesc" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
+                               value="${document.getElementById('eventDescription').textContent}">
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">수동 안내문구:</label>
+                        <textarea id="manualInstruct" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; height: 60px;">${document.getElementById('manualInstructionText').innerHTML}</textarea>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button onclick="applyManualConfig()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; margin-right: 10px; cursor: pointer;">
+                            ✅ 적용
+                        </button>
+                        <button onclick="closeModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+        
+        function applyManualConfig() {
+            const title = document.getElementById('manualTitle').value;
+            const desc = document.getElementById('manualDesc').value;
+            const manual = document.getElementById('manualInstruct').value;
+            
+            // localStorage에 저장
+            const config = {
+                eventTitle: title,
+                eventDescription: desc,
+                manualInstruction: manual
+            };
+            
+            localStorage.setItem('attendanceConfig', JSON.stringify(config));
+            localStorage.setItem('eventTitle', title);
+            localStorage.setItem('eventDescription', desc);
+            localStorage.setItem('manualInstruction', manual);
+            
+            // 즉시 DOM에 적용
+            forceUpdateElement(document.getElementById('eventTitle'), title);
+            forceUpdateElement(document.getElementById('eventDescription'), desc);
+            forceUpdateElement(document.getElementById('manualInstructionText'), manual, 'innerHTML');
+            forceUpdateElement(document.getElementById('blockedManualInstructionText'), manual, 'innerHTML');
+            document.title = title;
+            
+            closeModal();
+            
             setTimeout(() => {
-                document.body.style.transform = '';
-            }, 1);
+                diagnoseMobileIssue();
+            }, 100);
         }
 
         function applyLoadedConfig(settings) {
@@ -1017,6 +1235,11 @@
                 if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                     document.getElementById('debugInfo').style.display = 'block';
                     updateDebugInfo();
+                    
+                    // 즉시 진단 실행
+                    setTimeout(() => {
+                        diagnoseMobileIssue();
+                    }, 200);
                 }
             }
 
@@ -1696,31 +1919,136 @@
             }
         }
 
-        // 모바일에서 수동 새로고침 버튼 추가
+        // 모바일에서 수동 새로고침 버튼 추가 (개선된 버전)
         function addManualRefreshButton() {
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                const refreshBtn = document.createElement('button');
-                refreshBtn.innerHTML = '🔄 강제 새로고침';
-                refreshBtn.style.cssText = `
+                // 버튼 컨테이너 생성
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.cssText = `
                     position: fixed;
                     top: 10px;
                     right: 10px;
                     z-index: 9999;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                `;
+                
+                // 강제 새로고침 버튼
+                const refreshBtn = document.createElement('button');
+                refreshBtn.innerHTML = '🔄 강제새로고침';
+                refreshBtn.style.cssText = `
                     background: #ff6b6b;
                     color: white;
                     border: none;
                     padding: 8px 12px;
                     border-radius: 6px;
-                    font-size: 12px;
+                    font-size: 11px;
                     font-weight: bold;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    cursor: pointer;
                 `;
                 refreshBtn.onclick = () => {
                     console.log('🔄 수동 강제 새로고침 요청');
                     forceTotalRefresh();
                 };
-                document.body.appendChild(refreshBtn);
+                
+                // 진단 버튼
+                const diagnoseBtn = document.createElement('button');
+                diagnoseBtn.innerHTML = '🔍 진단';
+                diagnoseBtn.style.cssText = `
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    cursor: pointer;
+                `;
+                diagnoseBtn.onclick = () => {
+                    console.log('🔍 모바일 진단 요청');
+                    diagnoseMobileIssue();
+                };
+                
+                // 수동 설정 버튼
+                const manualBtn = document.createElement('button');
+                manualBtn.innerHTML = '⚙️ 수동설정';
+                manualBtn.style.cssText = `
+                    background: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    cursor: pointer;
+                `;
+                manualBtn.onclick = () => {
+                    console.log('⚙️ 수동 설정 요청');
+                    showManualConfigInput();
+                };
+                
+                buttonContainer.appendChild(refreshBtn);
+                buttonContainer.appendChild(diagnoseBtn);
+                buttonContainer.appendChild(manualBtn);
+                document.body.appendChild(buttonContainer);
             }
+        }
+
+        function updateDebugInfo() {
+            const debugDetails = document.getElementById('debugDetails');
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            let debugText = '';
+            debugText += `모바일: ${isMobile ? 'Yes' : 'No'}<br>`;
+            debugText += `User Agent: ${navigator.userAgent.substring(0, 50)}...<br>`;
+            debugText += `localStorage 키 수: ${Object.keys(localStorage).length}<br>`;
+            
+            // 설정 관련 키 확인
+            const configKeys = [
+                'attendanceConfig',
+                'eventConfig', 
+                'checkConfig',
+                'eventTitle',
+                'eventDescription',
+                'manualInstruction',
+                'allowedLocations'
+            ];
+            
+            debugText += '<br><strong>설정 키 상태:</strong><br>';
+            configKeys.forEach(key => {
+                const exists = localStorage.getItem(key) !== null;
+                debugText += `${key}: ${exists ? '✅' : '❌'}<br>`;
+            });
+            
+            // 현재 DOM 상태
+            debugText += '<br><strong>현재 DOM 상태:</strong><br>';
+            debugText += `제목: "${document.getElementById('eventTitle').textContent}"<br>`;
+            debugText += `설명: "${document.getElementById('eventDescription').textContent}"<br>`;
+            
+            // localStorage 내용 미리보기
+            const attendanceConfig = localStorage.getItem('attendanceConfig');
+            if (attendanceConfig) {
+                try {
+                    const config = JSON.parse(attendanceConfig);
+                    debugText += '<br><strong>저장된 설정:</strong><br>';
+                    debugText += `저장된 제목: "${config.eventTitle || 'N/A'}"<br>`;
+                    debugText += `저장된 설명: "${config.eventDescription || 'N/A'}"<br>`;
+                } catch (e) {
+                    debugText += '<br><strong>설정 파싱 오류:</strong><br>';
+                    debugText += `오류: ${e.message}<br>`;
+                }
+            }
+            
+            debugText += '<br><strong>액션:</strong><br>';
+            debugText += '• 🔍 진단 버튼으로 실시간 체크<br>';
+            debugText += '• ⚙️ 수동설정으로 직접 입력<br>';
+            debugText += '• 🔄 강제새로고침으로 완전 리셋<br>';
+            
+            debugDetails.innerHTML = debugText;
         }
 
         // 페이지 로드 후 새로고침 버튼 추가
