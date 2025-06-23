@@ -506,11 +506,12 @@
             debugDetails.innerHTML = debugText;
         }
 
-        // 개선된 관리자 설정 로드 함수 (강화된 모바일 지원)
+        // 초강력 모바일 설정 로드 함수 (캐시 무력화)
         function loadAdminSettings() {
             console.log('🔄 관리자 설정 로드 시작...');
             console.log('📱 User Agent:', navigator.userAgent);
             console.log('📱 Is Mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+            console.log('⏰ 로드 시간:', new Date().toLocaleTimeString());
             
             try {
                 // localStorage 접근 가능성 체크
@@ -523,6 +524,10 @@
                 const allKeys = Object.keys(localStorage);
                 console.log('📦 localStorage 전체 키:', allKeys);
 
+                // 캐시 버스터 - 현재 시간을 이용해 강제로 새로운 데이터 요청
+                const cacheBuster = Date.now();
+                console.log('💥 캐시 버스터:', cacheBuster);
+
                 // 여러 키로 설정 확인 (우선순위 순)
                 const configPriority = [
                     'attendanceConfig',
@@ -532,14 +537,23 @@
 
                 let loadedConfig = null;
                 let usedKey = null;
+                let rawConfigData = null;
 
                 for (const key of configPriority) {
-                    const configData = localStorage.getItem(key);
-                    if (configData) {
+                    rawConfigData = localStorage.getItem(key);
+                    console.log(`🔍 ${key} 원본 데이터:`, rawConfigData);
+                    
+                    if (rawConfigData) {
                         try {
-                            loadedConfig = JSON.parse(configData);
+                            loadedConfig = JSON.parse(rawConfigData);
                             usedKey = key;
                             console.log(`✅ 설정 로드 성공 (키: ${key}):`, loadedConfig);
+                            
+                            // 모바일에서는 즉시 적용하고 강제 DOM 업데이트
+                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                                console.log('📱 모바일 감지: 즉시 강제 적용');
+                                forceApplyConfigMobile(loadedConfig);
+                            }
                             break;
                         } catch (e) {
                             console.warn(`⚠️ ${key} 파싱 오류:`, e);
@@ -557,21 +571,118 @@
                     loadIndividualSettings();
                 }
 
-                // 모바일에서 강제 새로고침 트리거
+                // 모바일에서 다중 재적용 (시간차 공격)
                 if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    setTimeout(() => {
-                        console.log('📱 모바일: 지연된 설정 재적용');
-                        forceReapplySettings();
-                    }, 100);
+                    console.log('📱 모바일: 다중 재적용 스케줄링');
+                    
+                    [50, 100, 200, 500, 1000, 2000].forEach((delay, index) => {
+                        setTimeout(() => {
+                            console.log(`📱 재적용 ${index + 1}/6 (${delay}ms)`);
+                            forceReapplySettings();
+                            bruteForceDOMUpdate();
+                        }, delay);
+                    });
                 }
 
                 console.log('✅ 관리자 설정 로드 완료');
                 
             } catch (e) {
                 console.error('❌ 설정 로드 오류:', e);
-                // 오류 시 기본값 사용
                 console.log('🔄 기본값으로 fallback');
             }
+        }
+
+        // 모바일 전용 강제 설정 적용 함수
+        function forceApplyConfigMobile(config) {
+            console.log('💪 모바일 강제 설정 적용:', config);
+            
+            // 1. 제목 강제 업데이트
+            if (config.eventTitle) {
+                const titleElement = document.getElementById('eventTitle');
+                if (titleElement) {
+                    console.log(`📝 제목 강제 변경: "${titleElement.textContent}" → "${config.eventTitle}"`);
+                    
+                    // 여러 방법으로 동시 적용
+                    titleElement.textContent = config.eventTitle;
+                    titleElement.innerHTML = config.eventTitle;
+                    titleElement.innerText = config.eventTitle;
+                    
+                    // CSS 강제 업데이트
+                    titleElement.style.display = 'none';
+                    titleElement.offsetHeight; // 강제 리플로우
+                    titleElement.style.display = '';
+                    
+                    // 브라우저 탭 제목도 강제 변경
+                    document.title = config.eventTitle;
+                    
+                    // 추가: setAttribute로도 시도
+                    titleElement.setAttribute('data-title', config.eventTitle);
+                }
+            }
+            
+            // 2. 설명 강제 업데이트
+            if (config.eventDescription) {
+                const descElement = document.getElementById('eventDescription');
+                if (descElement) {
+                    console.log(`📄 설명 강제 변경: "${descElement.textContent}" → "${config.eventDescription}"`);
+                    
+                    descElement.textContent = config.eventDescription;
+                    descElement.innerHTML = config.eventDescription;
+                    descElement.innerText = config.eventDescription;
+                    
+                    descElement.style.display = 'none';
+                    descElement.offsetHeight;
+                    descElement.style.display = '';
+                }
+            }
+            
+            // 3. 수동 안내문구 강제 업데이트
+            if (config.manualInstruction) {
+                ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        console.log(`📋 ${id} 강제 변경`);
+                        element.innerHTML = config.manualInstruction;
+                        element.style.display = 'none';
+                        element.offsetHeight;
+                        element.style.display = '';
+                    }
+                });
+            }
+            
+            console.log('💪 모바일 강제 적용 완료');
+        }
+
+        // 브루트 포스 DOM 업데이트 (최후의 수단)
+        function bruteForceDOMUpdate() {
+            console.log('💥 브루트 포스 DOM 업데이트 실행');
+            
+            // 모든 텍스트 요소를 강제로 다시 렌더링
+            const textElements = ['eventTitle', 'eventDescription', 'manualInstructionText', 'blockedManualInstructionText'];
+            
+            textElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const currentContent = element.textContent || element.innerHTML;
+                    
+                    // 임시로 다른 내용으로 변경 후 원래대로 복구 (강제 리플로우)
+                    element.innerHTML = '';
+                    element.style.opacity = '0';
+                    element.offsetHeight; // 강제 리플로우
+                    
+                    element.innerHTML = currentContent;
+                    element.style.opacity = '1';
+                    element.offsetHeight; // 또 다른 강제 리플로우
+                    
+                    console.log(`💥 ${id} 브루트포스 업데이트 완료`);
+                }
+            });
+            
+            // 전체 body도 한번 건드려주기
+            document.body.style.transform = 'translateZ(0)';
+            setTimeout(() => {
+                document.body.style.transform = '';
+            }, 1);
         }
 
         function applyLoadedConfig(settings) {
@@ -690,14 +801,45 @@
                         console.log(`🔁 ${key}에서 재적용:`, config);
                         
                         if (config.eventTitle && config.eventTitle !== currentTitle) {
-                            document.getElementById('eventTitle').textContent = config.eventTitle;
-                            document.title = config.eventTitle;
                             console.log('🔥 제목 강제 업데이트:', config.eventTitle);
+                            
+                            // 여러 방법으로 동시 시도
+                            const titleEl = document.getElementById('eventTitle');
+                            titleEl.textContent = config.eventTitle;
+                            titleEl.innerHTML = config.eventTitle;
+                            titleEl.innerText = config.eventTitle;
+                            document.title = config.eventTitle;
+                            
+                            // 모바일에서 추가 강제 업데이트
+                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                                titleEl.style.fontSize = '27px';
+                                setTimeout(() => titleEl.style.fontSize = '28px', 1);
+                            }
                         }
                         
                         if (config.eventDescription && config.eventDescription !== currentDesc) {
-                            document.getElementById('eventDescription').textContent = config.eventDescription;
                             console.log('🔥 설명 강제 업데이트:', config.eventDescription);
+                            
+                            const descEl = document.getElementById('eventDescription');
+                            descEl.textContent = config.eventDescription;
+                            descEl.innerHTML = config.eventDescription;
+                            descEl.innerText = config.eventDescription;
+                            
+                            // 모바일에서 추가 강제 업데이트
+                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                                descEl.style.fontSize = '15px';
+                                setTimeout(() => descEl.style.fontSize = '16px', 1);
+                            }
+                        }
+                        
+                        // 수동 안내문구도 강제 업데이트
+                        if (config.manualInstruction) {
+                            ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
+                                const el = document.getElementById(id);
+                                if (el) {
+                                    el.innerHTML = config.manualInstruction;
+                                }
+                            });
                         }
                         
                         break; // 첫 번째 유효한 설정만 사용
@@ -705,6 +847,50 @@
                         console.warn(`⚠️ ${key} 재파싱 오류:`, e);
                     }
                 }
+            }
+            
+            // 모바일에서 브루트 포스 적용
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                bruteForceDOMUpdate();
+            }
+        }
+
+        // 캐시 완전 무력화 함수
+        function nukeMobileCache() {
+            console.log('☢️ 모바일 캐시 완전 무력화 시작');
+            
+            try {
+                // 1. 메타 태그로 캐시 무력화
+                const noCache = document.createElement('meta');
+                noCache.httpEquiv = 'Cache-Control';
+                noCache.content = 'no-cache, no-store, must-revalidate, max-age=0';
+                document.head.appendChild(noCache);
+                
+                const pragma = document.createElement('meta');
+                pragma.httpEquiv = 'Pragma';
+                pragma.content = 'no-cache';
+                document.head.appendChild(pragma);
+                
+                const expires = document.createElement('meta');
+                expires.httpEquiv = 'Expires';
+                expires.content = '0';
+                document.head.appendChild(expires);
+                
+                // 2. URL에 캐시 버스터 추가 (현재 URL 히스토리 조작)
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('_cb', Date.now());
+                window.history.replaceState({}, '', currentUrl);
+                
+                // 3. localStorage를 다시 읽어서 강제 적용
+                setTimeout(() => {
+                    console.log('☢️ 캐시 무력화 후 설정 재로드');
+                    loadAdminSettings();
+                }, 10);
+                
+                console.log('☢️ 모바일 캐시 무력화 완료');
+                
+            } catch (e) {
+                console.warn('⚠️ 캐시 무력화 실패:', e);
             }
         }
 
@@ -1435,11 +1621,16 @@
             }
         });
 
-        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화 (강화된 버전)
+        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화 (초강력 버전)
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 DOMContentLoaded 이벤트 시작');
             
             try {
+                // 모바일에서 즉시 캐시 무력화
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    nukeMobileCache();
+                }
+                
                 // 1. 관리자 설정을 먼저 로드
                 loadAdminSettings();
                 
@@ -1459,6 +1650,12 @@
                     
                     // 4. 주기적 설정 검사 시작
                     periodicSettingsCheck();
+                    
+                    // 5. 강력한 주기적 강제 업데이트 (모바일 전용)
+                    setInterval(() => {
+                        console.log('📱 주기적 강제 업데이트');
+                        bruteForceDOMUpdate();
+                    }, 10000); // 10초마다
                 }
                 
                 console.log('✅ 페이지 로드 완료 - 관리자 설정 및 출석 시스템 초기화됨');
@@ -1468,6 +1665,66 @@
                 alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
         });
+
+        // 추가: 완전한 새로고침 강제 함수 (모바일용)
+        function forceTotalRefresh() {
+            console.log('🔄 완전한 새로고침 강제 실행');
+            
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                // 모든 캐시 관련 스토리지 클리어 후 새로고침
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => {
+                            caches.delete(name);
+                        });
+                    });
+                }
+                
+                // 서비스 워커가 있다면 업데이트
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(registration => {
+                            registration.update();
+                        });
+                    });
+                }
+                
+                // 캐시 버스터와 함께 강제 새로고침
+                setTimeout(() => {
+                    window.location.href = window.location.href + '?_force=' + Date.now();
+                }, 100);
+            }
+        }
+
+        // 모바일에서 수동 새로고침 버튼 추가
+        function addManualRefreshButton() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                const refreshBtn = document.createElement('button');
+                refreshBtn.innerHTML = '🔄 강제 새로고침';
+                refreshBtn.style.cssText = `
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    z-index: 9999;
+                    background: #ff6b6b;
+                    color: white;
+                    border: none;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: bold;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                `;
+                refreshBtn.onclick = () => {
+                    console.log('🔄 수동 강제 새로고침 요청');
+                    forceTotalRefresh();
+                };
+                document.body.appendChild(refreshBtn);
+            }
+        }
+
+        // 페이지 로드 후 새로고침 버튼 추가
+        setTimeout(addManualRefreshButton, 1000);
 
         // 전역 에러 핸들러
         window.addEventListener('error', (event) => {
