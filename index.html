@@ -968,75 +968,36 @@
             document.getElementById('debugInfo').style.display = 'block';
         }
         
-        // 수동 설정 입력 기능 (최후의 수단)
-        function showManualConfigInput() {
-            const modal = document.getElementById('customModal');
-            const modalContent = modal.querySelector('.modal-content');
+        // 브루트 포스 DOM 업데이트 (최후의 수단)
+        function bruteForceDOMUpdate() {
+            console.log('💥 브루트 포스 DOM 업데이트 실행');
             
-            modalContent.innerHTML = `
-                <div style="text-align: left;">
-                    <h3 style="text-align: center; margin-bottom: 20px;">⚙️ 수동 설정 입력</h3>
+            // 모든 텍스트 요소를 강제로 다시 렌더링
+            const textElements = ['eventTitle', 'eventDescription', 'manualInstructionText', 'blockedManualInstructionText'];
+            
+            textElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    const currentContent = element.textContent || element.innerHTML;
                     
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">행사 제목:</label>
-                        <input type="text" id="manualTitle" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;" 
-                               value="${document.getElementById('eventTitle').textContent}">
-                    </div>
+                    // 임시로 다른 내용으로 변경 후 원래대로 복구 (강제 리플로우)
+                    element.innerHTML = '';
+                    element.style.opacity = '0';
+                    element.offsetHeight; // 강제 리플로우
                     
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">행사 설명:</label>
-                        <input type="text" id="manualDesc" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"
-                               value="${document.getElementById('eventDescription').textContent}">
-                    </div>
+                    element.innerHTML = currentContent;
+                    element.style.opacity = '1';
+                    element.offsetHeight; // 또 다른 강제 리플로우
                     
-                    <div style="margin-bottom: 20px;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">수동 안내문구:</label>
-                        <textarea id="manualInstruct" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; height: 60px;">${document.getElementById('manualInstructionText').innerHTML}</textarea>
-                    </div>
-                    
-                    <div style="text-align: center;">
-                        <button onclick="applyManualConfig()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; margin-right: 10px; cursor: pointer;">
-                            ✅ 적용
-                        </button>
-                        <button onclick="closeModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
-                            취소
-                        </button>
-                    </div>
-                </div>
-            `;
+                    console.log(`💥 ${id} 브루트포스 업데이트 완료`);
+                }
+            });
             
-            modal.classList.add('active');
-        }
-        
-        function applyManualConfig() {
-            const title = document.getElementById('manualTitle').value;
-            const desc = document.getElementById('manualDesc').value;
-            const manual = document.getElementById('manualInstruct').value;
-            
-            // localStorage에 저장
-            const config = {
-                eventTitle: title,
-                eventDescription: desc,
-                manualInstruction: manual
-            };
-            
-            localStorage.setItem('attendanceConfig', JSON.stringify(config));
-            localStorage.setItem('eventTitle', title);
-            localStorage.setItem('eventDescription', desc);
-            localStorage.setItem('manualInstruction', manual);
-            
-            // 즉시 DOM에 적용
-            forceUpdateElement(document.getElementById('eventTitle'), title);
-            forceUpdateElement(document.getElementById('eventDescription'), desc);
-            forceUpdateElement(document.getElementById('manualInstructionText'), manual, 'innerHTML');
-            forceUpdateElement(document.getElementById('blockedManualInstructionText'), manual, 'innerHTML');
-            document.title = title;
-            
-            closeModal();
-            
+            // 전체 body도 한번 건드려주기
+            document.body.style.transform = 'translateZ(0)';
             setTimeout(() => {
-                diagnoseMobileIssue();
-            }, 100);
+                document.body.style.transform = '';
+            }, 1);
         }
 
         function applyLoadedConfig(settings) {
@@ -2055,7 +2016,7 @@
             }
         }
 
-        // 모바일에서 수동 새로고침 버튼 추가 (개선된 버전)
+        // 모바일에서 수동 새로고침 버튼 추가 (단순화된 버전)
         function addManualRefreshButton() {
             if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
                 // 버튼 컨테이너 생성
@@ -2072,7 +2033,7 @@
                 
                 // 강제 새로고침 버튼
                 const refreshBtn = document.createElement('button');
-                refreshBtn.innerHTML = '🔄 강제새로고침';
+                refreshBtn.innerHTML = '🔄 새로고침';
                 refreshBtn.style.cssText = `
                     background: #ff6b6b;
                     color: white;
@@ -2108,28 +2069,8 @@
                     diagnoseMobileIssue();
                 };
                 
-                // 수동 설정 버튼
-                const manualBtn = document.createElement('button');
-                manualBtn.innerHTML = '⚙️ 수동설정';
-                manualBtn.style.cssText = `
-                    background: #28a745;
-                    color: white;
-                    border: none;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    cursor: pointer;
-                `;
-                manualBtn.onclick = () => {
-                    console.log('⚙️ 수동 설정 요청');
-                    showManualConfigInput();
-                };
-                
                 buttonContainer.appendChild(refreshBtn);
                 buttonContainer.appendChild(diagnoseBtn);
-                buttonContainer.appendChild(manualBtn);
                 document.body.appendChild(buttonContainer);
             }
         }
@@ -2150,8 +2091,7 @@
                 'checkConfig',
                 'eventTitle',
                 'eventDescription',
-                'manualInstruction',
-                'allowedLocations'
+                'manualInstruction'
             ];
             
             debugText += '<br><strong>설정 키 상태:</strong><br>';
@@ -2173,16 +2113,33 @@
                     debugText += '<br><strong>저장된 설정:</strong><br>';
                     debugText += `저장된 제목: "${config.eventTitle || 'N/A'}"<br>`;
                     debugText += `저장된 설명: "${config.eventDescription || 'N/A'}"<br>`;
+                    
+                    // 불일치 감지
+                    const currentTitle = document.getElementById('eventTitle').textContent;
+                    const currentDesc = document.getElementById('eventDescription').textContent;
+                    
+                    if (config.eventTitle && config.eventTitle !== currentTitle) {
+                        debugText += '<br><strong>⚠️ 불일치 감지:</strong><br>';
+                        debugText += `제목 불일치: DOM="${currentTitle}" vs 저장됨="${config.eventTitle}"<br>`;
+                    }
+                    
+                    if (config.eventDescription && config.eventDescription !== currentDesc) {
+                        debugText += `설명 불일치: DOM="${currentDesc}" vs 저장됨="${config.eventDescription}"<br>`;
+                    }
+                    
                 } catch (e) {
                     debugText += '<br><strong>설정 파싱 오류:</strong><br>';
                     debugText += `오류: ${e.message}<br>`;
                 }
+            } else {
+                debugText += '<br><strong>⚠️ 경고:</strong><br>';
+                debugText += 'attendanceConfig가 없습니다!<br>';
+                debugText += '관리자 페이지에서 설정을 저장해주세요.<br>';
             }
             
             debugText += '<br><strong>액션:</strong><br>';
             debugText += '• 🔍 진단 버튼으로 실시간 체크<br>';
-            debugText += '• ⚙️ 수동설정으로 직접 입력<br>';
-            debugText += '• 🔄 강제새로고침으로 완전 리셋<br>';
+            debugText += '• 🔄 새로고침으로 완전 리셋<br>';
             
             debugDetails.innerHTML = debugText;
         }
