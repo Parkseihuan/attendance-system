@@ -84,42 +84,9 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .autocomplete-detected {
-            background-color: #d4edda !important;
-            border-color: #28a745 !important;
-        }
-
-        .warning-message, .error-message, .success-message {
-            padding: 12px;
-            border-radius: 8px;
-            margin: 10px 0;
-            font-size: 14px;
-            display: none;
-        }
-
-        .warning-message {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-        }
-
-        .error-message {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .success-message {
-            background-color: #d1edff;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-
-        .submit-btn {
+        .submit-btn, .location-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             border: none;
             border-radius: 10px;
             font-size: 18px;
@@ -129,81 +96,25 @@
             margin-top: 20px;
         }
 
-        .submit-btn:hover:not(:disabled) {
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .location-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            margin-bottom: 15px;
+            margin-top: 0;
+        }
+
+        .submit-btn:hover:not(:disabled), .location-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
 
-        .submit-btn:disabled {
+        .submit-btn:disabled, .location-btn:disabled {
             background: #bdc3c7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .device-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 12px;
-            color: #6c757d;
-        }
-
-        .timestamp {
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-top: 20px;
-        }
-
-        .blocked-message {
-            text-align: center;
-            color: #e74c3c;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .manual-instruction {
-            background: #e8f4f8;
-            border-left: 4px solid #17a2b8;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-        }
-
-        .manual-instruction h3 {
-            color: #17a2b8;
-            margin-bottom: 10px;
-        }
-
-        .fingerprint-info {
-            font-size: 10px;
-            color: #adb5bd;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .location-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 15px;
-        }
-
-        .location-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(40, 167, 69, 0.3);
-        }
-
-        .location-btn:disabled {
-            background: #6c757d;
             cursor: not-allowed;
             transform: none;
         }
@@ -225,9 +136,6 @@
             border-radius: 8px;
             padding: 15px;
             margin-top: 10px;
-        }
-
-        .location-result {
             font-size: 14px;
             line-height: 1.5;
         }
@@ -250,105 +158,71 @@
             margin: 10px 0;
         }
 
-        .coordinates-info {
+        .manual-instruction {
+            background: #e8f4f8;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .manual-instruction h3 {
+            color: #17a2b8;
+            margin-bottom: 10px;
+        }
+
+        .blocked-message {
+            text-align: center;
+            color: #e74c3c;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .device-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
             font-size: 12px;
             color: #6c757d;
-            margin-top: 8px;
-            font-family: monospace;
-            background: #f1f3f4;
-            padding: 8px;
-            border-radius: 4px;
         }
 
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            transform: translateY(-20px);
-            opacity: 0;
-            transition: transform 0.3s ease, opacity 0.3s ease;
-        }
-
-        .modal-overlay.active .modal-content {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .modal-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
-        .modal-message {
-            font-size: 16px;
-            color: #555;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-
-        .modal-close-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .modal-close-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
-        
-        .modal-icon.success { color: #28a745; }
-        .modal-icon.error { color: #dc3545; }
-        .modal-icon.warning { color: #ffc107; }
-
-        /* 모바일 디버그 정보 표시 */
-        .debug-info {
+        .debug-panel {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 8px;
-            padding: 10px;
-            margin-top: 15px;
-            font-size: 12px;
-            color: #6c757d;
+            padding: 15px;
+            margin-top: 20px;
             font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
         }
+
+        .mobile-buttons {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .mobile-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .mobile-btn.refresh { background: #ff6b6b; }
+        .mobile-btn.diagnose { background: #007bff; }
 
         @media (max-width: 600px) {
             .container {
@@ -358,10 +232,6 @@
             
             .header h1 {
                 font-size: 24px;
-            }
-
-            .debug-info {
-                font-size: 10px;
             }
         }
     </style>
@@ -409,10 +279,6 @@
                     <input type="hidden" id="coordinates" name="coordinates">
                 </div>
 
-                <div class="warning-message rounded-lg" id="warningMessage">
-                    ⚠️ 입력하신 정보와 브라우저에 저장된 정보가 다릅니다. 정확한 정보인지 확인해 주세요.
-                </div>
-
                 <button type="submit" class="submit-btn rounded-lg" id="submitBtn">출석 체크 완료</button>
             </form>
 
@@ -422,16 +288,12 @@
             </div>
 
             <div class="device-info rounded-lg" id="deviceInfo"></div>
-            <div class="fingerprint-info">
-                보안을 위해 기기 정보를 수집합니다 (중복 체크 방지용)
-            </div>
-
-            <!-- 모바일 디버그 정보 -->
-            <div class="debug-info" id="debugInfo" style="display: none;">
-                <div><strong>설정 로드 상태:</strong></div>
-                <div id="debugDetails"></div>
-                <button type="button" onclick="toggleDebug()" style="margin-top: 5px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 10px;">
-                    디버그 토글
+            
+            <div class="debug-panel" id="debugPanel" style="display: none;">
+                <div><strong>🔍 설정 상태 확인:</strong></div>
+                <div id="debugContent"></div>
+                <button type="button" onclick="toggleDebug()" style="margin-top: 10px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 11px;">
+                    디버그 숨기기
                 </button>
             </div>
         </div>
@@ -440,439 +302,221 @@
             <div class="blocked-message">
                 <h2>🚫 이미 출석 체크 완료</h2>
                 <p>이 기기에서는 이미 출석 체크가 완료되었습니다.</p>
-                <div class="manual-instruction rounded-r-lg" id="blockedManualInstruction">
+                <div class="manual-instruction rounded-r-lg">
                     <h3>다른 방법으로 출석 체크</h3>
                     <p id="blockedManualInstructionText">행사장 앞쪽에 비치된 <strong>'참석자 명부'</strong>에 직접 기재해 주세요.</p>
                 </div>
             </div>
         </div>
-
-        <div class="timestamp" id="timestamp"></div>
     </div>
 
-    <!-- Custom Modal for Alerts -->
-    <div id="customModal" class="modal-overlay">
-        <div class="modal-content rounded-xl">
-            <div id="modalIcon" class="modal-icon"></div>
-            <h3 id="modalTitle" class="modal-title"></h3>
-            <p id="modalMessage" class="modal-message"></p>
-            <button id="modalCloseBtn" class="modal-close-btn rounded-lg">확인</button>
-        </div>
+    <!-- 모바일 버튼들 -->
+    <div class="mobile-buttons" id="mobileButtons" style="display: none;">
+        <button class="mobile-btn refresh" onclick="forceRefresh()">🔄 새로고침</button>
+        <button class="mobile-btn diagnose" onclick="diagnoseAndFix()">🔍 진단수정</button>
     </div>
 
     <script>
-        // 전역 디버그 함수
+        console.log('🚀 사용자 페이지 시작');
+        
+        // 전역 설정
+        window.userPageConfig = {
+            eventTitle: '🎓 세미나실 출석 체크',
+            eventDescription: '행사 참석 확인을 위해 정보를 입력해 주세요',
+            manualInstruction: '행사장 앞쪽에 비치된 <strong>\'참석자 명부\'</strong>에 직접 기재해 주시기 바랍니다.',
+            allowedLocations: [
+                { name: "단호홀", lat: 37.228848, lng: 127.167855, radius: 30 },
+                { name: "벽소홀", lat: 37.228767, lng: 127.167449, radius: 30 },
+                { name: "대학교 본관", lat: 37.227239, lng: 127.166598, radius: 50 }
+            ]
+        };
+
+        // 모바일 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // 디버그 토글 함수
         function toggleDebug() {
-            const debugInfo = document.getElementById('debugInfo');
-            if (debugInfo.style.display === 'none') {
-                debugInfo.style.display = 'block';
+            const debugPanel = document.getElementById('debugPanel');
+            if (debugPanel.style.display === 'none') {
+                debugPanel.style.display = 'block';
                 updateDebugInfo();
             } else {
-                debugInfo.style.display = 'none';
+                debugPanel.style.display = 'none';
             }
         }
 
+        // 디버그 정보 업데이트
         function updateDebugInfo() {
-            const debugDetails = document.getElementById('debugDetails');
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const debugContent = document.getElementById('debugContent');
             
-            let debugText = '';
-            debugText += `모바일: ${isMobile ? 'Yes' : 'No'}<br>`;
-            debugText += `User Agent: ${navigator.userAgent.substring(0, 50)}...<br>`;
-            debugText += `localStorage 키 수: ${Object.keys(localStorage).length}<br>`;
+            let info = [];
+            info.push(`시간: ${new Date().toLocaleTimeString()}`);
+            info.push(`모바일: ${isMobile ? 'Yes' : 'No'}`);
+            info.push('');
             
-            // 설정 관련 키 확인
-            const configKeys = [
-                'attendanceConfig',
-                'eventConfig', 
-                'checkConfig',
-                'eventTitle',
-                'eventDescription',
-                'manualInstruction',
-                'allowedLocations'
-            ];
-            
-            debugText += '<br><strong>설정 키 상태:</strong><br>';
-            configKeys.forEach(key => {
-                const exists = localStorage.getItem(key) !== null;
-                debugText += `${key}: ${exists ? '✅' : '❌'}<br>`;
+            // localStorage 키 확인
+            const keys = ['attendanceConfig', 'eventConfig', 'checkConfig', 'eventTitle', 'eventDescription', 'manualInstruction'];
+            info.push('📦 저장된 설정:');
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                info.push(`${key}: ${value ? '✅ 있음' : '❌ 없음'}`);
+                if (value && key === 'attendanceConfig') {
+                    try {
+                        const config = JSON.parse(value);
+                        info.push(`  제목: "${config.eventTitle || 'N/A'}"`);
+                        info.push(`  설명: "${config.eventDescription || 'N/A'}"`);
+                    } catch (e) {
+                        info.push(`  파싱 오류: ${e.message}`);
+                    }
+                }
             });
             
-            // 현재 DOM 상태
-            debugText += '<br><strong>현재 DOM 상태:</strong><br>';
-            debugText += `제목: "${document.getElementById('eventTitle').textContent}"<br>`;
-            debugText += `설명: "${document.getElementById('eventDescription').textContent}"<br>`;
+            info.push('');
+            info.push('🏠 현재 DOM:');
+            info.push(`제목: "${document.getElementById('eventTitle').textContent}"`);
+            info.push(`설명: "${document.getElementById('eventDescription').textContent}"`);
             
-            debugDetails.innerHTML = debugText;
+            debugContent.innerHTML = info.join('<br>');
         }
 
-        // 초강력 모바일 설정 로드 함수 (캐시 무력화)
-        function loadAdminSettings() {
-            console.log('🔄 관리자 설정 로드 시작...');
-            console.log('📱 User Agent:', navigator.userAgent);
-            console.log('📱 Is Mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-            console.log('⏰ 로드 시간:', new Date().toLocaleTimeString());
+        // 강제 새로고침
+        function forceRefresh() {
+            console.log('🔄 강제 새로고침 실행');
             
-            try {
-                // localStorage 접근 가능성 체크
-                if (typeof(Storage) === "undefined") {
-                    console.error('❌ localStorage 지원되지 않음');
-                    return;
-                }
+            // 캐시 버스터와 함께 새로고침
+            const url = new URL(window.location);
+            url.searchParams.set('_refresh', Date.now());
+            window.location.href = url.toString();
+        }
 
-                // 모든 localStorage 키 로그
-                const allKeys = Object.keys(localStorage);
-                console.log('📦 localStorage 전체 키:', allKeys);
-
-                // 캐시 버스터 - 현재 시간을 이용해 강제로 새로운 데이터 요청
-                const cacheBuster = Date.now();
-                console.log('💥 캐시 버스터:', cacheBuster);
-
-                // 여러 키로 설정 확인 (우선순위 순)
-                const configPriority = [
-                    'attendanceConfig',
-                    'eventConfig', 
-                    'checkConfig'
-                ];
-
-                let loadedConfig = null;
-                let usedKey = null;
-                let rawConfigData = null;
-
-                for (const key of configPriority) {
-                    rawConfigData = localStorage.getItem(key);
-                    console.log(`🔍 ${key} 원본 데이터:`, rawConfigData);
-                    
-                    if (rawConfigData) {
-                        try {
-                            loadedConfig = JSON.parse(rawConfigData);
-                            usedKey = key;
-                            console.log(`✅ 설정 로드 성공 (키: ${key}):`, loadedConfig);
-                            
-                            // 모바일에서는 즉시 적용하고 강제 DOM 업데이트
-                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                                console.log('📱 모바일 감지: 즉시 강제 적용');
-                                forceApplyConfigMobile(loadedConfig);
-                            }
-                            break;
-                        } catch (e) {
-                            console.warn(`⚠️ ${key} 파싱 오류:`, e);
-                        }
-                    } else {
-                        console.log(`❌ ${key} 없음`);
+        // 진단 및 수정
+        function diagnoseAndFix() {
+            console.log('🔍 진단 및 수정 시작');
+            
+            let fixes = [];
+            let hasChanges = false;
+            
+            // 1. localStorage에서 설정 찾기
+            const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
+            let foundConfig = null;
+            let configSource = '';
+            
+            for (const key of configKeys) {
+                const configData = localStorage.getItem(key);
+                if (configData) {
+                    try {
+                        foundConfig = JSON.parse(configData);
+                        configSource = key;
+                        console.log(`✅ 설정 발견: ${key}`, foundConfig);
+                        break;
+                    } catch (e) {
+                        console.warn(`⚠️ ${key} 파싱 실패:`, e);
                     }
                 }
-
-                if (loadedConfig && usedKey) {
-                    console.log(`🎯 사용된 설정 키: ${usedKey}`);
-                    applyLoadedConfig(loadedConfig);
-                } else {
-                    console.log('🔄 통합 설정 없음, 개별 키 확인...');
-                    loadIndividualSettings();
-                }
-
-                // 모바일에서 다중 재적용 (시간차 공격)
-                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    console.log('📱 모바일: 다중 재적용 스케줄링');
-                    
-                    [50, 100, 200, 500, 1000, 2000].forEach((delay, index) => {
-                        setTimeout(() => {
-                            console.log(`📱 재적용 ${index + 1}/6 (${delay}ms)`);
-                            forceReapplySettings();
-                            bruteForceDOMUpdate();
-                        }, delay);
-                    });
-                }
-
-                console.log('✅ 관리자 설정 로드 완료');
-                
-            } catch (e) {
-                console.error('❌ 설정 로드 오류:', e);
-                console.log('🔄 기본값으로 fallback');
             }
-        }
-
-        // 모바일 전용 강제 설정 적용 함수
-        function forceApplyConfigMobile(config) {
-            console.log('💪 모바일 강제 설정 적용:', config);
             
-            // 1. 제목 강제 업데이트
-            if (config.eventTitle) {
-                const titleElement = document.getElementById('eventTitle');
-                if (titleElement) {
-                    console.log(`📝 제목 강제 변경: "${titleElement.textContent}" → "${config.eventTitle}"`);
-                    
-                    // 여러 방법으로 동시 적용
-                    titleElement.textContent = config.eventTitle;
-                    titleElement.innerHTML = config.eventTitle;
-                    titleElement.innerText = config.eventTitle;
-                    
-                    // CSS 강제 업데이트
-                    titleElement.style.display = 'none';
-                    titleElement.offsetHeight; // 강제 리플로우
-                    titleElement.style.display = '';
-                    
-                    // 브라우저 탭 제목도 강제 변경
-                    document.title = config.eventTitle;
-                    
-                    // 추가: setAttribute로도 시도
-                    titleElement.setAttribute('data-title', config.eventTitle);
+            // 개별 키에서도 확인
+            if (!foundConfig) {
+                const title = localStorage.getItem('eventTitle');
+                const desc = localStorage.getItem('eventDescription');
+                const manual = localStorage.getItem('manualInstruction');
+                
+                if (title || desc) {
+                    foundConfig = {
+                        eventTitle: title,
+                        eventDescription: desc,
+                        manualInstruction: manual
+                    };
+                    configSource = 'individual_keys';
+                    console.log('✅ 개별 키에서 설정 구성:', foundConfig);
                 }
             }
             
-            // 2. 설명 강제 업데이트
-            if (config.eventDescription) {
-                const descElement = document.getElementById('eventDescription');
-                if (descElement) {
-                    console.log(`📄 설명 강제 변경: "${descElement.textContent}" → "${config.eventDescription}"`);
-                    
-                    descElement.textContent = config.eventDescription;
-                    descElement.innerHTML = config.eventDescription;
-                    descElement.innerText = config.eventDescription;
-                    
-                    descElement.style.display = 'none';
-                    descElement.offsetHeight;
-                    descElement.style.display = '';
-                }
-            }
-            
-            // 3. 수동 안내문구 강제 업데이트
-            if (config.manualInstruction) {
-                ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        console.log(`📋 ${id} 강제 변경`);
-                        element.innerHTML = config.manualInstruction;
-                        element.style.display = 'none';
-                        element.offsetHeight;
-                        element.style.display = '';
-                    }
-                });
-            }
-            
-            console.log('💪 모바일 강제 적용 완료');
-        }
-
-        // 실시간 진단 및 강제 수정 함수 (완전 수정된 버전)
-        function diagnoseMobileIssue() {
-            console.log('🔍 모바일 문제 진단 시작...');
-            
-            const diagnosis = {
-                timestamp: new Date().toLocaleTimeString(),
-                localStorage: {},
-                domState: {},
-                userAgent: navigator.userAgent,
-                issues: [],
-                fixes: [],
-                rawData: {}
-            };
-            
-            // 1. localStorage 완전 스캔
-            try {
-                const allKeys = Object.keys(localStorage);
-                diagnosis.rawData.allKeys = allKeys;
-                
-                // 주요 설정 키들 체크
-                diagnosis.localStorage.attendanceConfig = localStorage.getItem('attendanceConfig');
-                diagnosis.localStorage.eventTitle = localStorage.getItem('eventTitle');
-                diagnosis.localStorage.eventDescription = localStorage.getItem('eventDescription');
-                diagnosis.localStorage.manualInstruction = localStorage.getItem('manualInstruction');
-                diagnosis.localStorage.total_keys = allKeys.length;
-                
-                console.log('📦 localStorage 원시 데이터:');
-                console.log('  attendanceConfig:', diagnosis.localStorage.attendanceConfig);
-                console.log('  eventTitle:', diagnosis.localStorage.eventTitle);
-                console.log('  eventDescription:', diagnosis.localStorage.eventDescription);
-                console.log('  manualInstruction:', diagnosis.localStorage.manualInstruction);
-                
-            } catch (e) {
-                diagnosis.issues.push('localStorage 접근 불가: ' + e.message);
-                console.error('localStorage 오류:', e);
-            }
-            
-            // 2. DOM 상태 진단
-            try {
+            if (foundConfig) {
+                // 2. DOM과 비교하여 업데이트
                 const titleEl = document.getElementById('eventTitle');
                 const descEl = document.getElementById('eventDescription');
                 const manualEl = document.getElementById('manualInstructionText');
+                const blockedManualEl = document.getElementById('blockedManualInstructionText');
                 
-                diagnosis.domState.title = titleEl ? titleEl.textContent : 'element_not_found';
-                diagnosis.domState.description = descEl ? descEl.textContent : 'element_not_found';
-                diagnosis.domState.manual = manualEl ? manualEl.innerHTML : 'element_not_found';
-                diagnosis.domState.pageTitle = document.title;
-                
-                console.log('🏠 현재 DOM 상태:');
-                console.log('  제목:', diagnosis.domState.title);
-                console.log('  설명:', diagnosis.domState.description);
-                
-            } catch (e) {
-                diagnosis.issues.push('DOM 접근 불가: ' + e.message);
-                console.error('DOM 오류:', e);
-            }
-            
-            // 3. 실제 설정 데이터 확인 및 적용
-            let foundValidConfig = false;
-            
-            try {
-                // 우선순위: attendanceConfig > eventConfig > checkConfig > 개별 키들
-                const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
-                let config = null;
-                let configSource = '';
-                
-                for (const key of configKeys) {
-                    const configData = localStorage.getItem(key);
-                    console.log(`🔍 ${key} 확인:`, configData);
+                if (foundConfig.eventTitle && titleEl.textContent !== foundConfig.eventTitle) {
+                    console.log(`🔧 제목 수정: "${titleEl.textContent}" → "${foundConfig.eventTitle}"`);
+                    titleEl.textContent = foundConfig.eventTitle;
+                    document.title = foundConfig.eventTitle;
+                    fixes.push(`제목: ${foundConfig.eventTitle}`);
+                    hasChanges = true;
                     
-                    if (configData && configData !== 'null' && configData !== 'undefined') {
-                        try {
-                            config = JSON.parse(configData);
-                            configSource = key;
-                            console.log(`✅ 유효한 설정 발견: ${key}`, config);
-                            
-                            // 유효한 데이터인지 확인
-                            if (config && typeof config === 'object' && 
-                                (config.eventTitle || config.eventDescription)) {
-                                foundValidConfig = true;
-                                break;
-                            } else {
-                                console.warn(`⚠️ ${key}는 유효하지 않은 데이터:`, config);
-                            }
-                        } catch (e) {
-                            console.warn(`⚠️ ${key} 파싱 실패:`, e);
-                        }
+                    // 시각적 효과
+                    titleEl.style.backgroundColor = '#ffeb3b';
+                    setTimeout(() => titleEl.style.backgroundColor = '', 1000);
+                }
+                
+                if (foundConfig.eventDescription && descEl.textContent !== foundConfig.eventDescription) {
+                    console.log(`🔧 설명 수정: "${descEl.textContent}" → "${foundConfig.eventDescription}"`);
+                    descEl.textContent = foundConfig.eventDescription;
+                    fixes.push(`설명: ${foundConfig.eventDescription}`);
+                    hasChanges = true;
+                    
+                    // 시각적 효과
+                    descEl.style.backgroundColor = '#ffeb3b';
+                    setTimeout(() => descEl.style.backgroundColor = '', 1000);
+                }
+                
+                if (foundConfig.manualInstruction) {
+                    if (manualEl) {
+                        manualEl.innerHTML = foundConfig.manualInstruction;
+                        fixes.push('수동 안내문구');
+                    }
+                    if (blockedManualEl) {
+                        blockedManualEl.innerHTML = foundConfig.manualInstruction;
                     }
                 }
                 
-                // 개별 키에서 설정 찾기
-                if (!foundValidConfig) {
-                    console.log('🔄 개별 키에서 설정 찾는 중...');
-                    const title = localStorage.getItem('eventTitle');
-                    const desc = localStorage.getItem('eventDescription');
-                    const manual = localStorage.getItem('manualInstruction');
-                    
-                    console.log('개별 키 확인:');
-                    console.log('  eventTitle:', title);
-                    console.log('  eventDescription:', desc);
-                    console.log('  manualInstruction:', manual);
-                    
-                    if (title && title !== 'null' && title !== '🎓 세미나실 출석 체크') {
-                        config = {
-                            eventTitle: title,
-                            eventDescription: desc || '기본 설명',
-                            manualInstruction: manual || '기본 안내문구'
-                        };
-                        configSource = 'individual_keys';
-                        foundValidConfig = true;
-                        console.log('✅ 개별 키에서 유효한 설정 구성:', config);
-                    }
+                // 허용 위치 업데이트
+                if (foundConfig.allowedLocations) {
+                    window.userPageConfig.allowedLocations = foundConfig.allowedLocations;
+                    fixes.push('허용 위치');
                 }
                 
-                if (foundValidConfig && config) {
-                    diagnosis.rawData.foundConfig = config;
-                    diagnosis.rawData.configSource = configSource;
-                    
-                    const titleEl = document.getElementById('eventTitle');
-                    const descEl = document.getElementById('eventDescription');
-                    
-                    // 실제로 다른 내용인지 확인 후 업데이트
-                    let actuallyChanged = false;
-                    
-                    if (config.eventTitle && titleEl && titleEl.textContent !== config.eventTitle) {
-                        console.log(`🔧 제목 실제 변경: "${titleEl.textContent}" → "${config.eventTitle}"`);
-                        forceUpdateElement(titleEl, config.eventTitle);
-                        document.title = config.eventTitle;
-                        diagnosis.fixes.push(`제목: ${config.eventTitle}`);
-                        actuallyChanged = true;
-                    }
-                    
-                    if (config.eventDescription && descEl && descEl.textContent !== config.eventDescription) {
-                        console.log(`🔧 설명 실제 변경: "${descEl.textContent}" → "${config.eventDescription}"`);
-                        forceUpdateElement(descEl, config.eventDescription);
-                        diagnosis.fixes.push(`설명: ${config.eventDescription}`);
-                        actuallyChanged = true;
-                    }
-                    
-                    if (config.manualInstruction) {
-                        ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
-                            const el = document.getElementById(id);
-                            if (el && el.innerHTML !== config.manualInstruction) {
-                                console.log(`🔧 ${id} 실제 변경`);
-                                forceUpdateElement(el, config.manualInstruction, 'innerHTML');
-                                diagnosis.fixes.push(`안내문구 수정`);
-                                actuallyChanged = true;
-                            }
-                        });
-                    }
-                    
-                    if (actuallyChanged) {
-                        addVisualFeedback();
-                    } else {
-                        diagnosis.issues.push('설정이 이미 최신 상태입니다');
-                        console.log('ℹ️ 모든 설정이 이미 DOM과 일치함');
-                    }
-                    
-                } else {
-                    diagnosis.issues.push('관리자가 설정한 데이터를 찾을 수 없습니다');
-                    console.error('❌ 유효한 설정 데이터를 전혀 찾을 수 없음');
-                    
-                    // 관리자 페이지에서 설정 저장이 제대로 안되었을 가능성
-                    diagnosis.issues.push('관리자 페이지에서 "모든 설정 저장"을 다시 시도해보세요');
-                }
+                // 전역 설정 업데이트
+                window.userPageConfig = { ...window.userPageConfig, ...foundConfig };
                 
-            } catch (e) {
-                diagnosis.issues.push('설정 적용 오류: ' + e.message);
-                console.error('설정 적용 오류:', e);
-            }
-            
-            // 5. 진단 결과 표시
-            showDiagnosisResult(diagnosis);
-            
-            // 6. 정확한 알림 표시
-            const fixCount = diagnosis.fixes.length;
-            const issueCount = diagnosis.issues.length;
-            
-            if (fixCount > 0) {
-                showQuickAlert(`✅ ${fixCount}개 항목이 실제로 수정되었습니다!`, 'success');
-            } else if (issueCount > 0) {
-                showQuickAlert(`⚠️ 설정 데이터를 찾을 수 없습니다. 관리자 페이지에서 설정을 저장해주세요.`, 'warning');
             } else {
-                showQuickAlert('ℹ️ 모든 설정이 이미 최신 상태입니다', 'info');
+                console.error('❌ 설정 데이터를 찾을 수 없음');
             }
             
-            return diagnosis;
-        }
-        
-        // 시각적 피드백 함수
-        function addVisualFeedback() {
-            const elements = ['eventTitle', 'eventDescription'];
+            // 3. 결과 알림
+            if (hasChanges) {
+                showAlert(`✅ ${fixes.length}개 항목이 수정되었습니다!\n- ${fixes.join('\n- ')}`, 'success');
+            } else if (foundConfig) {
+                showAlert('ℹ️ 모든 설정이 이미 최신 상태입니다', 'info');
+            } else {
+                showAlert('⚠️ 관리자 페이지에서 설정을 저장해주세요', 'warning');
+            }
             
-            elements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    // 깜빡이는 효과
-                    element.style.transition = 'background-color 0.3s ease';
-                    element.style.backgroundColor = '#ffeb3b';
-                    
-                    setTimeout(() => {
-                        element.style.backgroundColor = '';
-                        setTimeout(() => {
-                            element.style.transition = '';
-                        }, 300);
-                    }, 500);
-                }
-            });
+            // 디버그 정보 업데이트
+            if (document.getElementById('debugPanel').style.display !== 'none') {
+                updateDebugInfo();
+            }
         }
-        
-        // 빠른 알림 함수
-        function showQuickAlert(message, type = 'info') {
+
+        // 알림 표시
+        function showAlert(message, type = 'info') {
+            const colors = {
+                success: '#28a745',
+                warning: '#ffc107', 
+                error: '#dc3545',
+                info: '#007bff'
+            };
+            
             const alert = document.createElement('div');
-            alert.innerHTML = message;
+            alert.textContent = message;
             alert.style.cssText = `
                 position: fixed;
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
-                background: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : '#007bff'};
+                background: ${colors[type]};
                 color: white;
                 padding: 15px 25px;
                 border-radius: 8px;
@@ -882,6 +526,7 @@
                 font-size: 14px;
                 text-align: center;
                 max-width: 80%;
+                white-space: pre-line;
             `;
             
             document.body.appendChild(alert);
@@ -889,415 +534,107 @@
             setTimeout(() => {
                 alert.style.opacity = '0';
                 alert.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => {
-                    document.body.removeChild(alert);
-                }, 300);
-            }, 2000);
-        }
-        
-        // 강력한 요소 업데이트 함수
-        function forceUpdateElement(element, content, method = 'textContent') {
-            if (!element) return;
-            
-            // 1. 기본 업데이트
-            element[method] = content;
-            
-            // 2. 모든 가능한 방법으로 업데이트
-            if (method === 'textContent') {
-                element.textContent = content;
-                element.innerText = content;
-                element.innerHTML = content;
-            } else if (method === 'innerHTML') {
-                element.innerHTML = content;
-            }
-            
-            // 3. 스타일 강제 변경으로 리렌더링 트리거
-            const originalDisplay = element.style.display;
-            const originalVisibility = element.style.visibility;
-            
-            element.style.display = 'none';
-            element.style.visibility = 'hidden';
-            element.offsetHeight; // 강제 리플로우
-            
-            element.style.display = originalDisplay || '';
-            element.style.visibility = originalVisibility || '';
-            element.offsetHeight; // 또 다른 강제 리플로우
-            
-            // 4. 클래스 조작으로 CSS 재계산 강제
-            const tempClass = 'force-update-' + Date.now();
-            element.classList.add(tempClass);
-            setTimeout(() => element.classList.remove(tempClass), 1);
-            
-            console.log(`💪 강력 업데이트 완료: ${element.id} → "${content}"`);
-        }
-        
-        // 진단 결과 표시 함수
-        function showDiagnosisResult(diagnosis) {
-            const debugDetails = document.getElementById('debugDetails');
-            if (!debugDetails) return;
-            
-            let html = `<div style="font-size: 10px; line-height: 1.3;">`;
-            html += `<strong>🔍 진단 시간:</strong> ${diagnosis.timestamp}<br>`;
-            html += `<strong>📱 모바일:</strong> ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Yes' : 'No'}<br><br>`;
-            
-            html += `<strong>📦 localStorage:</strong><br>`;
-            html += `• attendanceConfig: ${diagnosis.localStorage.attendanceConfig ? '✅' : '❌'}<br>`;
-            html += `• eventTitle: ${diagnosis.localStorage.eventTitle ? '✅' : '❌'}<br>`;
-            html += `• eventDescription: ${diagnosis.localStorage.eventDescription ? '✅' : '❌'}<br>`;
-            html += `• 총 키 수: ${diagnosis.localStorage.total_keys}<br><br>`;
-            
-            html += `<strong>🏠 현재 DOM:</strong><br>`;
-            html += `• 제목: "${diagnosis.domState.title}"<br>`;
-            html += `• 설명: "${diagnosis.domState.description}"<br><br>`;
-            
-            if (diagnosis.issues.length > 0) {
-                html += `<strong>⚠️ 발견된 문제:</strong><br>`;
-                diagnosis.issues.forEach(issue => html += `• ${issue}<br>`);
-                html += `<br>`;
-            }
-            
-            if (diagnosis.fixes.length > 0) {
-                html += `<strong>🔧 적용된 수정:</strong><br>`;
-                diagnosis.fixes.forEach(fix => html += `• ${fix}<br>`);
-                html += `<br>`;
-            }
-            
-            html += `</div>`;
-            
-            debugDetails.innerHTML = html;
-            
-            // 디버그 패널 자동 표시
-            document.getElementById('debugInfo').style.display = 'block';
-        }
-        
-        // 브루트 포스 DOM 업데이트 (최후의 수단)
-        function bruteForceDOMUpdate() {
-            console.log('💥 브루트 포스 DOM 업데이트 실행');
-            
-            // 모든 텍스트 요소를 강제로 다시 렌더링
-            const textElements = ['eventTitle', 'eventDescription', 'manualInstructionText', 'blockedManualInstructionText'];
-            
-            textElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    const currentContent = element.textContent || element.innerHTML;
-                    
-                    // 임시로 다른 내용으로 변경 후 원래대로 복구 (강제 리플로우)
-                    element.innerHTML = '';
-                    element.style.opacity = '0';
-                    element.offsetHeight; // 강제 리플로우
-                    
-                    element.innerHTML = currentContent;
-                    element.style.opacity = '1';
-                    element.offsetHeight; // 또 다른 강제 리플로우
-                    
-                    console.log(`💥 ${id} 브루트포스 업데이트 완료`);
-                }
-            });
-            
-            // 전체 body도 한번 건드려주기
-            document.body.style.transform = 'translateZ(0)';
-            setTimeout(() => {
-                document.body.style.transform = '';
-            }, 1);
+                setTimeout(() => document.body.removeChild(alert), 300);
+            }, 3000);
         }
 
-        function applyLoadedConfig(settings) {
-            console.log('🎨 설정 적용 시작:', settings);
-            
-            // 제목 업데이트
-            if (settings.eventTitle) {
-                updateElement('eventTitle', settings.eventTitle, 'textContent');
-                document.title = settings.eventTitle; // 브라우저 탭 제목도 변경
-                console.log('📝 제목 업데이트:', settings.eventTitle);
-            }
-            
-            // 설명 업데이트
-            if (settings.eventDescription) {
-                updateElement('eventDescription', settings.eventDescription, 'textContent');
-                console.log('📄 설명 업데이트:', settings.eventDescription);
-            }
-            
-            // 수동 안내문구 업데이트
-            if (settings.manualInstruction) {
-                updateElement('manualInstructionText', settings.manualInstruction, 'innerHTML');
-                updateElement('blockedManualInstructionText', settings.manualInstruction, 'innerHTML');
-                console.log('📋 수동 안내문구 업데이트:', settings.manualInstruction);
-            }
-            
-            // 허용 위치 업데이트
-            if (settings.allowedLocations && settings.allowedLocations.length > 0) {
-                if (window.CONFIG) {
-                    window.CONFIG.ALLOWED_LOCATIONS = settings.allowedLocations;
-                    console.log('📍 허용 위치 업데이트:', window.CONFIG.ALLOWED_LOCATIONS);
-                } else {
-                    // CONFIG 객체가 아직 없으면 나중에 설정
-                    window.pendingAllowedLocations = settings.allowedLocations;
-                    console.log('📍 허용 위치 대기 중:', settings.allowedLocations);
-                }
-            }
-        }
-
-        function updateElement(id, content, method = 'textContent') {
-            const element = document.getElementById(id);
-            if (element) {
-                const oldContent = element[method];
-                element[method] = content;
-                console.log(`🔄 ${id} 업데이트: "${oldContent}" → "${content}"`);
-                
-                // 모바일에서 강제 리플로우 트리거
-                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    element.style.display = 'none';
-                    element.offsetHeight; // 강제 리플로우
-                    element.style.display = '';
-                }
-                
-                return true;
-            } else {
-                console.warn(`⚠️ 요소 "${id}" 찾을 수 없음`);
-                return false;
-            }
-        }
-
-        function loadIndividualSettings() {
-            console.log('🔄 개별 설정 키 로드 시작...');
-            
-            const individualSettings = [
-                { key: 'eventTitle', elementId: 'eventTitle', method: 'textContent' },
-                { key: 'eventDescription', elementId: 'eventDescription', method: 'textContent' },
-                { key: 'manualInstruction', elementId: 'manualInstructionText', method: 'innerHTML' },
-                { key: 'manualInstruction', elementId: 'blockedManualInstructionText', method: 'innerHTML' }
-            ];
-
-            individualSettings.forEach(({ key, elementId, method }) => {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    updateElement(elementId, value, method);
-                    console.log(`✅ 개별 설정 적용: ${key} → ${elementId}`);
-                } else {
-                    console.log(`❌ 개별 설정 없음: ${key}`);
-                }
-            });
-
-            // 허용 위치 개별 로드
-            const allowedLocations = localStorage.getItem('allowedLocations');
-            if (allowedLocations) {
-                try {
-                    const locations = JSON.parse(allowedLocations);
-                    if (window.CONFIG) {
-                        window.CONFIG.ALLOWED_LOCATIONS = locations;
-                    } else {
-                        window.pendingAllowedLocations = locations;
-                    }
-                    console.log('✅ 개별 허용 위치 적용:', locations);
-                } catch (e) {
-                    console.warn('⚠️ 허용 위치 파싱 오류:', e);
-                }
-            }
-        }
-
-        function forceReapplySettings() {
-            console.log('💪 강제 설정 재적용 시작...');
-            
-            // DOM에서 현재 값 확인
-            const currentTitle = document.getElementById('eventTitle').textContent;
-            const currentDesc = document.getElementById('eventDescription').textContent;
-            
-            console.log('📊 현재 DOM 상태:');
-            console.log('  제목:', currentTitle);
-            console.log('  설명:', currentDesc);
-            
-            // localStorage에서 다시 확인하여 적용
-            const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
-            
-            for (const key of configKeys) {
-                const configData = localStorage.getItem(key);
-                if (configData) {
-                    try {
-                        const config = JSON.parse(configData);
-                        console.log(`🔁 ${key}에서 재적용:`, config);
-                        
-                        if (config.eventTitle && config.eventTitle !== currentTitle) {
-                            console.log('🔥 제목 강제 업데이트:', config.eventTitle);
-                            
-                            // 여러 방법으로 동시 시도
-                            const titleEl = document.getElementById('eventTitle');
-                            titleEl.textContent = config.eventTitle;
-                            titleEl.innerHTML = config.eventTitle;
-                            titleEl.innerText = config.eventTitle;
-                            document.title = config.eventTitle;
-                            
-                            // 모바일에서 추가 강제 업데이트
-                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                                titleEl.style.fontSize = '27px';
-                                setTimeout(() => titleEl.style.fontSize = '28px', 1);
-                            }
-                        }
-                        
-                        if (config.eventDescription && config.eventDescription !== currentDesc) {
-                            console.log('🔥 설명 강제 업데이트:', config.eventDescription);
-                            
-                            const descEl = document.getElementById('eventDescription');
-                            descEl.textContent = config.eventDescription;
-                            descEl.innerHTML = config.eventDescription;
-                            descEl.innerText = config.eventDescription;
-                            
-                            // 모바일에서 추가 강제 업데이트
-                            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                                descEl.style.fontSize = '15px';
-                                setTimeout(() => descEl.style.fontSize = '16px', 1);
-                            }
-                        }
-                        
-                        // 수동 안내문구도 강제 업데이트
-                        if (config.manualInstruction) {
-                            ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
-                                const el = document.getElementById(id);
-                                if (el) {
-                                    el.innerHTML = config.manualInstruction;
-                                }
-                            });
-                        }
-                        
-                        break; // 첫 번째 유효한 설정만 사용
-                    } catch (e) {
-                        console.warn(`⚠️ ${key} 재파싱 오류:`, e);
-                    }
-                }
-            }
-            
-            // 모바일에서 브루트 포스 적용
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                bruteForceDOMUpdate();
-            }
-        }
-
-        // 캐시 완전 무력화 함수
-        function nukeMobileCache() {
-            console.log('☢️ 모바일 캐시 완전 무력화 시작');
+        // 관리자 설정 로드 (핵심 함수)
+        function loadAdminSettings() {
+            console.log('🔄 관리자 설정 로드 시작');
             
             try {
-                // 1. 메타 태그로 캐시 무력화
-                const noCache = document.createElement('meta');
-                noCache.httpEquiv = 'Cache-Control';
-                noCache.content = 'no-cache, no-store, must-revalidate, max-age=0';
-                document.head.appendChild(noCache);
+                const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
+                let loadedConfig = null;
+                let usedKey = '';
                 
-                const pragma = document.createElement('meta');
-                pragma.httpEquiv = 'Pragma';
-                pragma.content = 'no-cache';
-                document.head.appendChild(pragma);
+                // 통합 설정 우선 확인
+                for (const key of configKeys) {
+                    const configData = localStorage.getItem(key);
+                    if (configData) {
+                        try {
+                            loadedConfig = JSON.parse(configData);
+                            usedKey = key;
+                            console.log(`✅ 설정 로드 성공: ${key}`, loadedConfig);
+                            break;
+                        } catch (e) {
+                            console.warn(`⚠️ ${key} 파싱 오류:`, e);
+                        }
+                    }
+                }
                 
-                const expires = document.createElement('meta');
-                expires.httpEquiv = 'Expires';
-                expires.content = '0';
-                document.head.appendChild(expires);
+                // 개별 키에서도 확인
+                if (!loadedConfig) {
+                    const title = localStorage.getItem('eventTitle');
+                    const desc = localStorage.getItem('eventDescription');
+                    const manual = localStorage.getItem('manualInstruction');
+                    
+                    if (title || desc) {
+                        loadedConfig = {
+                            eventTitle: title,
+                            eventDescription: desc,
+                            manualInstruction: manual
+                        };
+                        usedKey = 'individual_keys';
+                        console.log('✅ 개별 키에서 설정 구성:', loadedConfig);
+                    }
+                }
                 
-                // 2. URL에 캐시 버스터 추가 (현재 URL 히스토리 조작)
-                const currentUrl = new URL(window.location);
-                currentUrl.searchParams.set('_cb', Date.now());
-                window.history.replaceState({}, '', currentUrl);
-                
-                // 3. localStorage를 다시 읽어서 강제 적용
-                setTimeout(() => {
-                    console.log('☢️ 캐시 무력화 후 설정 재로드');
-                    loadAdminSettings();
-                }, 10);
-                
-                console.log('☢️ 모바일 캐시 무력화 완료');
+                if (loadedConfig) {
+                    applyConfig(loadedConfig);
+                    console.log(`✅ 설정 적용 완료 (출처: ${usedKey})`);
+                } else {
+                    console.log('ℹ️ 저장된 관리자 설정 없음, 기본값 사용');
+                }
                 
             } catch (e) {
-                console.warn('⚠️ 캐시 무력화 실패:', e);
+                console.error('❌ 설정 로드 오류:', e);
             }
         }
 
-        // 구성 설정
-        const CONFIG = {
-            // Google Apps Script URL (실제 배포된 URL로 변경 필요)
-            GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx9E3st904bHJ5F_T8q7rUNI87KpDhKXj7IWRxCRwHywdok1WYUC-MKMwq9jPd03s7_Jw/exec',
-            // 재시도 설정
-            MAX_RETRIES: 3,
-            RETRY_DELAY: 1000, // 1초
+        // 설정 적용
+        function applyConfig(config) {
+            if (config.eventTitle) {
+                document.getElementById('eventTitle').textContent = config.eventTitle;
+                document.title = config.eventTitle;
+                window.userPageConfig.eventTitle = config.eventTitle;
+            }
             
-            // 위치 설정
-            GPS_TIMEOUT: 15000, // 15초
-            GPS_MAX_AGE: 300000, // 5분
+            if (config.eventDescription) {
+                document.getElementById('eventDescription').textContent = config.eventDescription;
+                window.userPageConfig.eventDescription = config.eventDescription;
+            }
             
-            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음)
-            ALLOWED_LOCATIONS: [
-                {
-                    name: "단호홀",
-                    lat: 37.228848,
-                    lng: 127.167855,
-                    radius: 30
-                },
-                {
-                    name: "벽소홀", 
-                    lat: 37.228767,
-                    lng: 127.167449,
-                    radius: 30
-                },
-                {
-                    name: "대학교 본관",
-                    lat: 37.227239,
-                    lng: 127.166598,
-                    radius: 50
-                }
-            ]
-        };
+            if (config.manualInstruction) {
+                const manualEl = document.getElementById('manualInstructionText');
+                const blockedManualEl = document.getElementById('blockedManualInstructionText');
+                if (manualEl) manualEl.innerHTML = config.manualInstruction;
+                if (blockedManualEl) blockedManualEl.innerHTML = config.manualInstruction;
+                window.userPageConfig.manualInstruction = config.manualInstruction;
+            }
+            
+            if (config.allowedLocations) {
+                window.userPageConfig.allowedLocations = config.allowedLocations;
+            }
+        }
 
+        // 출석 시스템 기본 함수들
         class AttendanceSystem {
             constructor() {
                 this.deviceFingerprint = this.generateDeviceFingerprint();
-                this.autocompleteData = {};
-                this.currentLocation = null;
                 this.locationVerified = false;
-                this.submissionAttempts = 0;
+                this.currentLocation = null;
                 this.init();
             }
 
             generateDeviceFingerprint() {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    ctx.textBaseline = 'top';
-                    ctx.font = '14px Arial';
-                    ctx.fillText('Device fingerprint test', 2, 2);
-                    
-                    const fingerprint = {
-                        userAgent: navigator.userAgent,
-                        language: navigator.language,
-                        languages: navigator.languages?.join(',') || '',
-                        platform: navigator.platform,
-                        screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        canvas: canvas.toDataURL(),
-                        cookieEnabled: navigator.cookieEnabled,
-                        doNotTrack: navigator.doNotTrack || 'unspecified',
-                        hardwareConcurrency: navigator.hardwareConcurrency || 0,
-                        touchSupport: 'ontouchstart' in window,
-                        webglRenderer: this.getWebGLRenderer()
-                    };
-
-                    return this.simpleHash(JSON.stringify(fingerprint));
-                } catch (error) {
-                    console.warn('Fingerprint generation error:', error);
-                    return this.simpleHash(navigator.userAgent + Date.now());
-                }
-            }
-
-            getWebGLRenderer() {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (gl) {
-                        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                        return debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown';
-                    }
-                    return 'not_supported';
-                } catch (error) {
-                    return 'error';
-                }
+                const fingerprint = {
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    screen: `${screen.width}x${screen.height}`,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    platform: navigator.platform
+                };
+                return this.simpleHash(JSON.stringify(fingerprint));
             }
 
             simpleHash(str) {
@@ -1311,14 +648,6 @@
             }
 
             init() {
-                // 대기 중인 허용 위치가 있으면 적용
-                if (window.pendingAllowedLocations) {
-                    CONFIG.ALLOWED_LOCATIONS = window.pendingAllowedLocations;
-                    delete window.pendingAllowedLocations;
-                    console.log('📍 대기 중이던 허용 위치 적용:', CONFIG.ALLOWED_LOCATIONS);
-                }
-
-                this.updateTimestamp();
                 this.displayDeviceInfo();
                 
                 if (this.checkIfBlocked()) {
@@ -1326,32 +655,13 @@
                 }
                 
                 this.setupEventListeners();
-                this.detectAutocomplete();
-                
-                setInterval(() => this.updateTimestamp(), 1000);
-
-                // 모바일에서 추가 디버그 정보 표시
-                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    document.getElementById('debugInfo').style.display = 'block';
-                    updateDebugInfo();
-                    
-                    // 즉시 진단 실행
-                    setTimeout(() => {
-                        diagnoseMobileIssue();
-                    }, 200);
-                }
             }
 
             checkIfBlocked() {
                 const sessionBlocked = sessionStorage.getItem('attendance_submitted');
                 const deviceBlocked = localStorage.getItem(`attendance_${this.deviceFingerprint}`);
                 
-                const cookies = document.cookie.split(';').map(c => c.trim());
-                const cookieBlocked = cookies.some(cookie => 
-                    cookie.startsWith(`attendance_${this.deviceFingerprint}=`)
-                );
-
-                if (sessionBlocked || deviceBlocked || cookieBlocked) {
+                if (sessionBlocked || deviceBlocked) {
                     this.showBlockedMessage();
                     return true;
                 }
@@ -1364,103 +674,8 @@
             }
 
             setupEventListeners() {
-                const form = document.getElementById('checkInForm');
-                const inputs = form.querySelectorAll('input[autocomplete]');
-
-                inputs.forEach(input => {
-                    input.addEventListener('input', () => this.checkAutocompleteMatch(input));
-                    input.addEventListener('change', () => this.checkAutocompleteMatch(input));
-                });
-
                 document.getElementById('locationBtn').addEventListener('click', () => this.checkLocation());
-                document.getElementById('modalCloseBtn').addEventListener('click', () => this.hideModal());
-                
-                form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-                // 페이지 숨김/표시 이벤트 처리 (모바일 브라우저 대응)
-                document.addEventListener('visibilitychange', () => {
-                    if (!document.hidden) {
-                        this.updateTimestamp();
-                        // 모바일에서 페이지 재활성화 시 설정 재확인
-                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                            setTimeout(() => {
-                                console.log('📱 페이지 재활성화: 설정 재확인');
-                                forceReapplySettings();
-                                updateDebugInfo();
-                            }, 100);
-                        }
-                    }
-                });
-
-                // 모바일에서 새로고침 감지
-                window.addEventListener('pageshow', (event) => {
-                    if (event.persisted) {
-                        console.log('📱 백/포워드 캐시에서 복원됨: 설정 재적용');
-                        setTimeout(() => {
-                            loadAdminSettings();
-                            updateDebugInfo();
-                        }, 50);
-                    }
-                });
-            }
-
-            detectAutocomplete() {
-                setTimeout(() => {
-                    const inputs = document.querySelectorAll('input[autocomplete]');
-                    inputs.forEach(input => {
-                        if (input.value && input.value.trim() !== '') {
-                            this.autocompleteData[input.name] = input.value.trim();
-                            input.classList.add('autocomplete-detected');
-                        }
-                    });
-                }, 500);
-            }
-
-            checkAutocompleteMatch(input) {
-                const fieldName = input.name;
-                const currentValue = input.value.trim();
-                const autocompleteValue = this.autocompleteData[fieldName];
-
-                if (autocompleteValue && currentValue && 
-                    currentValue.toLowerCase() !== autocompleteValue.toLowerCase()) {
-                    this.showWarning('⚠️ 입력하신 정보와 브라우저 자동완성 정보가 다릅니다.');
-                } else {
-                    this.hideWarning();
-                }
-            }
-
-            showWarning(message) {
-                const warningDiv = document.getElementById('warningMessage');
-                warningDiv.textContent = message;
-                warningDiv.style.display = 'block';
-            }
-
-            hideWarning() {
-                document.getElementById('warningMessage').style.display = 'none';
-            }
-
-            showModal(type, title, message) {
-                const modalOverlay = document.getElementById('customModal');
-                const modalIcon = document.getElementById('modalIcon');
-                const modalTitle = document.getElementById('modalTitle');
-                const modalMessage = document.getElementById('modalMessage');
-
-                modalIcon.className = `modal-icon ${type}`;
-                switch(type) {
-                    case 'success': modalIcon.textContent = '✅'; break;
-                    case 'error': modalIcon.textContent = '❌'; break;
-                    case 'warning': modalIcon.textContent = '⚠️'; break;
-                    default: modalIcon.textContent = 'ℹ️';
-                }
-
-                modalTitle.textContent = title;
-                modalMessage.innerHTML = message;
-                
-                modalOverlay.classList.add('active');
-            }
-
-            hideModal() {
-                document.getElementById('customModal').classList.remove('active');
+                document.getElementById('checkInForm').addEventListener('submit', (e) => this.handleSubmit(e));
             }
 
             async checkLocation() {
@@ -1472,14 +687,8 @@
                 locationInfo.style.display = 'block';
 
                 try {
-                    if (!navigator.geolocation) {
-                        throw new Error('이 브라우저는 GPS 기능을 지원하지 않습니다.');
-                    }
-
                     const position = await this.getCurrentPosition();
                     const { latitude, longitude, accuracy } = position.coords;
-
-                    console.log(`GPS 정확도: ${accuracy}m`);
 
                     const allowedLocation = this.isLocationAllowed(latitude, longitude);
 
@@ -1502,20 +711,16 @@
                                 거리: 약 ${Math.round(allowedLocation.distance)}m<br>
                                 정확도: ±${Math.round(accuracy)}m
                             </div>
-                            <div class="coordinates-info">
-                                좌표: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}
-                            </div>
                         `;
 
                         document.getElementById('location').value = allowedLocation.name;
                         document.getElementById('coordinates').value = `${latitude},${longitude}`;
 
                     } else {
-                        throw new Error(`허용된 위치가 아닙니다. 세미나실 내부에서 시도해 주세요. (정확도: ±${Math.round(accuracy)}m)`);
+                        throw new Error(`허용된 위치가 아닙니다. 세미나실 내부에서 시도해 주세요.`);
                     }
 
                 } catch (error) {
-                    console.error('위치 확인 오류:', error);
                     this.handleLocationError(error, locationResult);
                 }
             }
@@ -1552,34 +757,12 @@
                 document.getElementById('location').value = '';
                 document.getElementById('coordinates').value = '';
 
-                let errorMessage = error.message;
-                let helpText = '';
-
-                if (error.code) {
-                    switch (error.code) {
-                        case 1: // PERMISSION_DENIED
-                            helpText = '• 브라우저 주소창의 위치 아이콘을 클릭하여 허용해주세요<br>• 설정 > 개인정보 보호 > 위치 서비스에서 허용해주세요';
-                            break;
-                        case 2: // POSITION_UNAVAILABLE
-                            helpText = '• WiFi를 켜주세요<br>• 건물 밖에서 한 번 시도해보세요<br>• 잠시 후 다시 시도해주세요';
-                            break;
-                        case 3: // TIMEOUT
-                            helpText = '• 네트워크 연결을 확인해주세요<br>• WiFi 신호가 강한 곳에서 시도해주세요';
-                            break;
-                    }
-                }
-
                 locationResult.innerHTML = `
                     <div class="location-error">
                         <strong>❌ 위치 확인 실패</strong><br>
-                        ${errorMessage}<br><br>
-                        <small style="font-size: 12px; line-height: 1.4;">
-                            ${helpText || '• GPS 권한을 허용해 주세요<br>• 세미나실 내부에서 시도해 주세요<br>• WiFi와 위치 서비스를 켜주세요'}
-                        </small>
+                        ${error.message}
                     </div>
                 `;
-
-                this.showModal('error', '위치 확인 실패', errorMessage);
             }
 
             getCurrentPosition() {
@@ -1589,15 +772,15 @@
                         reject,
                         {
                             enableHighAccuracy: true,
-                            timeout: CONFIG.GPS_TIMEOUT,
-                            maximumAge: CONFIG.GPS_MAX_AGE
+                            timeout: 15000,
+                            maximumAge: 300000
                         }
                     );
                 });
             }
 
             isLocationAllowed(lat, lng) {
-                for (const location of CONFIG.ALLOWED_LOCATIONS) {
+                for (const location of window.userPageConfig.allowedLocations) {
                     const distance = this.calculateDistance(lat, lng, location.lat, location.lng);
                     if (distance <= location.radius) {
                         return { name: location.name, distance: distance };
@@ -1639,10 +822,10 @@
                         return;
                     }
 
-                    await this.submitDataWithRetry(formData);
+                    await this.submitData(formData);
 
                     this.markAsSubmitted();
-                    this.showModal('success', '출석 체크 완료!', '✅ 출석 체크가 성공적으로 완료되었습니다.');
+                    showAlert('✅ 출석 체크가 성공적으로 완료되었습니다!', 'success');
                     
                     setTimeout(() => {
                         this.showBlockedMessage();
@@ -1650,8 +833,7 @@
 
                 } catch (error) {
                     console.error('제출 오류:', error);
-                    this.showModal('error', '제출 실패', 
-                        `❌ 출석 체크 제출에 실패했습니다.<br><small>${error.message}</small>`);
+                    showAlert('❌ 출석 체크 제출에 실패했습니다.', 'error');
                 } finally {
                     submitBtn.disabled = false;
                     submitBtn.textContent = '출석 체크 완료';
@@ -1664,52 +846,16 @@
                 const location = formData.get('location');
 
                 if (!name || !affiliation) {
-                    this.showModal('warning', '필수 항목 누락', 
-                        '이름과 소속은 필수 입력 항목입니다.');
-                    return false;
-                }
-
-                if (name.length < 2 || name.length > 50) {
-                    this.showModal('warning', '이름 오류', 
-                        '이름은 2자 이상 50자 이하로 입력해주세요.');
-                    return false;
-                }
-
-                if (affiliation.length < 2 || affiliation.length > 100) {
-                    this.showModal('warning', '소속 오류', 
-                        '소속은 2자 이상 100자 이하로 입력해주세요.');
+                    showAlert('이름과 소속은 필수 입력 항목입니다.', 'warning');
                     return false;
                 }
 
                 if (!this.locationVerified || !location) {
-                    this.showModal('warning', '위치 미확인', 
-                        'GPS 위치 확인을 먼저 완료해 주세요.');
+                    showAlert('GPS 위치 확인을 먼저 완료해 주세요.', 'warning');
                     return false;
                 }
 
                 return true;
-            }
-
-            async submitDataWithRetry(formData) {
-                this.submissionAttempts = 0;
-                
-                while (this.submissionAttempts < CONFIG.MAX_RETRIES) {
-                    try {
-                        this.submissionAttempts++;
-                        return await this.submitData(formData);
-                    } catch (error) {
-                        console.warn(`제출 시도 ${this.submissionAttempts}/${CONFIG.MAX_RETRIES} 실패:`, error);
-                        
-                        if (this.submissionAttempts >= CONFIG.MAX_RETRIES) {
-                            throw new Error(`${CONFIG.MAX_RETRIES}번 시도 후 실패: ${error.message}`);
-                        }
-                        
-                        // 재시도 전 대기
-                        await new Promise(resolve => 
-                            setTimeout(resolve, CONFIG.RETRY_DELAY * this.submissionAttempts)
-                        );
-                    }
-                }
             }
 
             async submitData(formData) {
@@ -1721,109 +867,23 @@
                     location: formData.get('location'),
                     coordinates: formData.get('coordinates') || '',
                     timestamp: new Date().toISOString(),
-                    timestampKor: new Date().toLocaleString('ko-KR'),
                     deviceId: this.deviceFingerprint,
-                    userAgent: navigator.userAgent,
-                    submissionAttempt: this.submissionAttempts
+                    userAgent: navigator.userAgent
                 };
 
-                // localStorage에 출석 데이터 저장 (관리자 페이지에서 확인용)
+                // localStorage에 출석 데이터 저장
                 try {
                     const existingData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
                     existingData.push(submitData);
                     localStorage.setItem('attendanceData', JSON.stringify(existingData));
-                    console.log('localStorage에 출석 데이터 저장 완료');
+                    console.log('출석 데이터 저장 완료');
                 } catch (storageError) {
                     console.warn('localStorage 저장 실패:', storageError);
                 }
 
-                if (CONFIG.GOOGLE_SCRIPT_URL && !CONFIG.GOOGLE_SCRIPT_URL.includes('YOUR_SCRIPT_ID')) {
-                    console.log('Google Apps Script로 데이터 전송 시도 중...');
-                    return await this.submitToAppsScript(submitData);
-                }
-                
-                console.warn('Google Apps Script URL이 설정되지 않았습니다.');
-                console.log('제출 데이터 (시뮬레이션):', submitData);
-                
-                // 개발/테스트 모드 시뮬레이션
+                // 시뮬레이션 (실제 서버 연동 시 여기에 fetch 추가)
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                return { success: true, message: 'URL 미설정으로 시뮬레이션됨' };
-            }
-
-            async submitToAppsScript(data) {
-                try {
-                    console.log('Apps Script URL:', CONFIG.GOOGLE_SCRIPT_URL);
-                    console.log('제출 데이터:', data);
-
-                    const response = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
-
-                    console.log('no-cors 모드로 전송 완료');
-                    return { success: true, message: 'no-cors 모드로 전송됨', mode: 'no-cors' };
-
-                } catch (noCorsError) {
-                    console.warn('no-cors 모드 실패, JSONP 방식으로 재시도:', noCorsError);
-                    return await this.submitViaJSONP(data);
-                }
-            }
-
-            async submitViaJSONP(data) {
-                return new Promise((resolve, reject) => {
-                    const callbackName = 'jsonpCallback' + Date.now() + Math.floor(Math.random() * 1000);
-                    
-                    console.log('JSONP 요청 시작:', callbackName);
-                    
-                    window[callbackName] = function(response) {
-                        console.log('JSONP 콜백 실행됨:', response);
-                        cleanup();
-                        resolve(response);
-                    };
-
-                    const timeoutId = setTimeout(() => {
-                        console.warn('JSONP 타임아웃 발생');
-                        cleanup();
-                        reject(new Error('JSONP 요청 타임아웃 (15초)'));
-                    }, 15000);
-
-                    const cleanup = () => {
-                        if (window[callbackName]) {
-                            delete window[callbackName];
-                        }
-                        if (script && script.parentNode) {
-                            script.parentNode.removeChild(script);
-                        }
-                        if (timeoutId) {
-                            clearTimeout(timeoutId);
-                        }
-                    };
-
-                    const params = new URLSearchParams();
-                    params.append('callback', callbackName);
-                    params.append('data', JSON.stringify(data));
-                    
-                    const fullUrl = `${CONFIG.GOOGLE_SCRIPT_URL}?${params.toString()}`;
-                    console.log('JSONP 요청 URL:', fullUrl);
-
-                    const script = document.createElement('script');
-                    script.src = fullUrl;
-                    script.onload = function() {
-                        console.log('JSONP 스크립트 로드 성공');
-                    };
-                    script.onerror = function(event) {
-                        console.error('JSONP 스크립트 로드 실패:', event);
-                        cleanup();
-                        reject(new Error('JSONP 스크립트 로드 실패'));
-                    };
-
-                    console.log('JSONP 스크립트 DOM에 추가');
-                    document.head.appendChild(script);
-                });
+                return { success: true };
             }
 
             markAsSubmitted() {
@@ -1841,30 +901,6 @@
                 } catch (e) {
                     console.warn('LocalStorage 저장 실패:', e);
                 }
-                
-                try {
-                    document.cookie = `attendance_${this.deviceFingerprint}=submitted; max-age=${30*24*60*60}; path=/; SameSite=Lax; Secure`;
-                } catch (e) {
-                    console.warn('Cookie 저장 실패:', e);
-                }
-            }
-
-            updateTimestamp() {
-                try {
-                    const now = new Date();
-                    const timeString = now.toLocaleString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        weekday: 'short'
-                    });
-                    document.getElementById('timestamp').textContent = `현재 시간: ${timeString}`;
-                } catch (error) {
-                    console.warn('타임스탬프 업데이트 오류:', error);
-                }
             }
 
             displayDeviceInfo() {
@@ -1877,9 +913,8 @@
                         <strong>기기 정보:</strong><br>
                         브라우저: ${browserName}<br>
                         운영체제: ${osName}<br>
-                        화면: ${screen.width}×${screen.height} (${screen.colorDepth}bit)<br>
+                        화면: ${screen.width}×${screen.height}<br>
                         언어: ${navigator.language}<br>
-                        터치: ${('ontouchstart' in window) ? '지원' : '미지원'}<br>
                         기기 ID: ${this.deviceFingerprint.substring(0, 8)}...
                     `;
                 } catch (error) {
@@ -1907,247 +942,70 @@
             }
         }
 
-        // 설정 동기화 검사 함수 (모바일 전용)
-        function periodicSettingsCheck() {
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                setInterval(() => {
-                    const currentTitle = document.getElementById('eventTitle').textContent;
-                    const configData = localStorage.getItem('attendanceConfig');
-                    
-                    if (configData) {
-                        try {
-                            const config = JSON.parse(configData);
-                            if (config.eventTitle && config.eventTitle !== currentTitle && currentTitle === '🎓 세미나실 출석 체크') {
-                                console.log('📱 주기적 검사: 설정 불일치 발견, 재적용');
-                                loadAdminSettings();
-                                updateDebugInfo();
-                            }
-                        } catch (e) {
-                            console.warn('⚠️ 주기적 설정 검사 오류:', e);
-                        }
-                    }
-                }, 5000); // 5초마다 검사
-            }
-        }
-
         // Storage 이벤트 리스너 (다른 탭에서 설정 변경 감지)
         window.addEventListener('storage', function(e) {
-            console.log('📡 Storage 이벤트 감지:', e.key, e.newValue);
-            
             if (e.key === 'attendanceConfig' || e.key === 'eventTitle' || e.key === 'eventDescription') {
-                console.log('📱 설정 변경 감지: 즉시 재적용');
+                console.log('📡 설정 변경 감지, 즉시 재로드');
                 setTimeout(() => {
                     loadAdminSettings();
-                    updateDebugInfo();
+                    if (document.getElementById('debugPanel').style.display !== 'none') {
+                        updateDebugInfo();
+                    }
                 }, 100);
             }
         });
 
-        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화 (초강력 버전)
+        // 페이지 visibility 변경 감지 (모바일 앱 전환 대응)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isMobile) {
+                console.log('📱 페이지 재활성화: 설정 재확인');
+                setTimeout(() => {
+                    loadAdminSettings();
+                    if (document.getElementById('debugPanel').style.display !== 'none') {
+                        updateDebugInfo();
+                    }
+                }, 100);
+            }
+        });
+
+        // 페이지 로드 완료 시 초기화
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 DOMContentLoaded 이벤트 시작');
+            console.log('🚀 DOM 로드 완료');
             
             try {
-                // 모바일에서 즉시 캐시 무력화
-                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    nukeMobileCache();
+                // 1. 모바일 버튼 표시
+                if (isMobile) {
+                    document.getElementById('mobileButtons').style.display = 'flex';
+                    document.getElementById('debugPanel').style.display = 'block';
+                    updateDebugInfo();
                 }
                 
-                // 1. 관리자 설정을 먼저 로드
+                // 2. 관리자 설정 로드
                 loadAdminSettings();
                 
-                // 2. 짧은 지연 후 출석 시스템 초기화
+                // 3. 출석 시스템 초기화
                 setTimeout(() => {
                     new AttendanceSystem();
                     console.log('✅ 출석 시스템 초기화 완료');
                 }, 100);
                 
-                // 3. 모바일에서 추가 지연 후 재확인
-                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    setTimeout(() => {
-                        console.log('📱 모바일: 추가 설정 재확인');
-                        forceReapplySettings();
-                        updateDebugInfo();
-                    }, 500);
-                    
-                    // 4. 주기적 설정 검사 시작
-                    periodicSettingsCheck();
-                    
-                    // 5. 강력한 주기적 강제 업데이트 (모바일 전용)
-                    setInterval(() => {
-                        console.log('📱 주기적 강제 업데이트');
-                        bruteForceDOMUpdate();
-                    }, 10000); // 10초마다
+                // 4. 모바일에서 추가 재확인
+                if (isMobile) {
+                    [500, 1000, 2000].forEach(delay => {
+                        setTimeout(() => {
+                            console.log(`📱 ${delay}ms 후 재확인`);
+                            loadAdminSettings();
+                        }, delay);
+                    });
                 }
                 
-                console.log('✅ 페이지 로드 완료 - 관리자 설정 및 출석 시스템 초기화됨');
+                console.log('✅ 페이지 초기화 완료');
                 
             } catch (error) {
-                console.error('❌ 시스템 초기화 오류:', error);
-                alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+                console.error('❌ 초기화 오류:', error);
+                showAlert('시스템 초기화 중 오류가 발생했습니다.', 'error');
             }
         });
-
-        // 추가: 완전한 새로고침 강제 함수 (모바일용)
-        function forceTotalRefresh() {
-            console.log('🔄 완전한 새로고침 강제 실행');
-            
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                // 모든 캐시 관련 스토리지 클리어 후 새로고침
-                if ('caches' in window) {
-                    caches.keys().then(names => {
-                        names.forEach(name => {
-                            caches.delete(name);
-                        });
-                    });
-                }
-                
-                // 서비스 워커가 있다면 업데이트
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(registrations => {
-                        registrations.forEach(registration => {
-                            registration.update();
-                        });
-                    });
-                }
-                
-                // 캐시 버스터와 함께 강제 새로고침
-                setTimeout(() => {
-                    window.location.href = window.location.href + '?_force=' + Date.now();
-                }, 100);
-            }
-        }
-
-        // 모바일에서 수동 새로고침 버튼 추가 (단순화된 버전)
-        function addManualRefreshButton() {
-            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                // 버튼 컨테이너 생성
-                const buttonContainer = document.createElement('div');
-                buttonContainer.style.cssText = `
-                    position: fixed;
-                    top: 10px;
-                    right: 10px;
-                    z-index: 9999;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 5px;
-                `;
-                
-                // 강제 새로고침 버튼
-                const refreshBtn = document.createElement('button');
-                refreshBtn.innerHTML = '🔄 새로고침';
-                refreshBtn.style.cssText = `
-                    background: #ff6b6b;
-                    color: white;
-                    border: none;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    cursor: pointer;
-                `;
-                refreshBtn.onclick = () => {
-                    console.log('🔄 수동 강제 새로고침 요청');
-                    forceTotalRefresh();
-                };
-                
-                // 진단 버튼
-                const diagnoseBtn = document.createElement('button');
-                diagnoseBtn.innerHTML = '🔍 진단';
-                diagnoseBtn.style.cssText = `
-                    background: #007bff;
-                    color: white;
-                    border: none;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: bold;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                    cursor: pointer;
-                `;
-                diagnoseBtn.onclick = () => {
-                    console.log('🔍 모바일 진단 요청');
-                    diagnoseMobileIssue();
-                };
-                
-                buttonContainer.appendChild(refreshBtn);
-                buttonContainer.appendChild(diagnoseBtn);
-                document.body.appendChild(buttonContainer);
-            }
-        }
-
-        function updateDebugInfo() {
-            const debugDetails = document.getElementById('debugDetails');
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            let debugText = '';
-            debugText += `모바일: ${isMobile ? 'Yes' : 'No'}<br>`;
-            debugText += `User Agent: ${navigator.userAgent.substring(0, 50)}...<br>`;
-            debugText += `localStorage 키 수: ${Object.keys(localStorage).length}<br>`;
-            
-            // 설정 관련 키 확인
-            const configKeys = [
-                'attendanceConfig',
-                'eventConfig', 
-                'checkConfig',
-                'eventTitle',
-                'eventDescription',
-                'manualInstruction'
-            ];
-            
-            debugText += '<br><strong>설정 키 상태:</strong><br>';
-            configKeys.forEach(key => {
-                const exists = localStorage.getItem(key) !== null;
-                debugText += `${key}: ${exists ? '✅' : '❌'}<br>`;
-            });
-            
-            // 현재 DOM 상태
-            debugText += '<br><strong>현재 DOM 상태:</strong><br>';
-            debugText += `제목: "${document.getElementById('eventTitle').textContent}"<br>`;
-            debugText += `설명: "${document.getElementById('eventDescription').textContent}"<br>`;
-            
-            // localStorage 내용 미리보기
-            const attendanceConfig = localStorage.getItem('attendanceConfig');
-            if (attendanceConfig) {
-                try {
-                    const config = JSON.parse(attendanceConfig);
-                    debugText += '<br><strong>저장된 설정:</strong><br>';
-                    debugText += `저장된 제목: "${config.eventTitle || 'N/A'}"<br>`;
-                    debugText += `저장된 설명: "${config.eventDescription || 'N/A'}"<br>`;
-                    
-                    // 불일치 감지
-                    const currentTitle = document.getElementById('eventTitle').textContent;
-                    const currentDesc = document.getElementById('eventDescription').textContent;
-                    
-                    if (config.eventTitle && config.eventTitle !== currentTitle) {
-                        debugText += '<br><strong>⚠️ 불일치 감지:</strong><br>';
-                        debugText += `제목 불일치: DOM="${currentTitle}" vs 저장됨="${config.eventTitle}"<br>`;
-                    }
-                    
-                    if (config.eventDescription && config.eventDescription !== currentDesc) {
-                        debugText += `설명 불일치: DOM="${currentDesc}" vs 저장됨="${config.eventDescription}"<br>`;
-                    }
-                    
-                } catch (e) {
-                    debugText += '<br><strong>설정 파싱 오류:</strong><br>';
-                    debugText += `오류: ${e.message}<br>`;
-                }
-            } else {
-                debugText += '<br><strong>⚠️ 경고:</strong><br>';
-                debugText += 'attendanceConfig가 없습니다!<br>';
-                debugText += '관리자 페이지에서 설정을 저장해주세요.<br>';
-            }
-            
-            debugText += '<br><strong>액션:</strong><br>';
-            debugText += '• 🔍 진단 버튼으로 실시간 체크<br>';
-            debugText += '• 🔄 새로고침으로 완전 리셋<br>';
-            
-            debugDetails.innerHTML = debugText;
-        }
-
-        // 페이지 로드 후 새로고침 버튼 추가
-        setTimeout(addManualRefreshButton, 1000);
 
         // 전역 에러 핸들러
         window.addEventListener('error', (event) => {
@@ -2157,7 +1015,8 @@
         window.addEventListener('unhandledrejection', (event) => {
             console.error('처리되지 않은 Promise 거부:', event.reason);
         });
-        
+
+        console.log('✅ 사용자 페이지 스크립트 로드 완료');
     </script>
 </body>
 </html>
