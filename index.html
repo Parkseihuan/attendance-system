@@ -653,7 +653,7 @@
             console.log('💪 모바일 강제 적용 완료');
         }
 
-        // 실시간 진단 및 강제 수정 함수 (강화된 버전)
+        // 실시간 진단 및 강제 수정 함수 (완전 수정된 버전)
         function diagnoseMobileIssue() {
             console.log('🔍 모바일 문제 진단 시작...');
             
@@ -669,7 +669,6 @@
             
             // 1. localStorage 완전 스캔
             try {
-                // 모든 localStorage 키 확인
                 const allKeys = Object.keys(localStorage);
                 diagnosis.rawData.allKeys = allKeys;
                 
@@ -678,16 +677,13 @@
                 diagnosis.localStorage.eventTitle = localStorage.getItem('eventTitle');
                 diagnosis.localStorage.eventDescription = localStorage.getItem('eventDescription');
                 diagnosis.localStorage.manualInstruction = localStorage.getItem('manualInstruction');
-                diagnosis.localStorage.allowedLocations = localStorage.getItem('allowedLocations');
                 diagnosis.localStorage.total_keys = allKeys.length;
                 
-                // 관리자 관련 키들도 확인
-                diagnosis.localStorage.attendance_settings = localStorage.getItem('attendance_settings');
-                diagnosis.localStorage.eventConfig = localStorage.getItem('eventConfig');
-                diagnosis.localStorage.checkConfig = localStorage.getItem('checkConfig');
-                
-                console.log('📦 localStorage 완전 진단:', diagnosis.localStorage);
-                console.log('📦 모든 키:', allKeys);
+                console.log('📦 localStorage 원시 데이터:');
+                console.log('  attendanceConfig:', diagnosis.localStorage.attendanceConfig);
+                console.log('  eventTitle:', diagnosis.localStorage.eventTitle);
+                console.log('  eventDescription:', diagnosis.localStorage.eventDescription);
+                console.log('  manualInstruction:', diagnosis.localStorage.manualInstruction);
                 
             } catch (e) {
                 diagnosis.issues.push('localStorage 접근 불가: ' + e.message);
@@ -705,116 +701,122 @@
                 diagnosis.domState.manual = manualEl ? manualEl.innerHTML : 'element_not_found';
                 diagnosis.domState.pageTitle = document.title;
                 
-                console.log('🏠 DOM 상태 진단:', diagnosis.domState);
+                console.log('🏠 현재 DOM 상태:');
+                console.log('  제목:', diagnosis.domState.title);
+                console.log('  설명:', diagnosis.domState.description);
+                
             } catch (e) {
                 diagnosis.issues.push('DOM 접근 불가: ' + e.message);
                 console.error('DOM 오류:', e);
             }
             
-            // 3. 데이터가 전혀 없는 경우 테스트 데이터 생성
-            if (!diagnosis.localStorage.attendanceConfig && 
-                !diagnosis.localStorage.eventTitle && 
-                !diagnosis.localStorage.eventDescription) {
-                
-                console.log('🆘 설정 데이터가 전혀 없음 - 테스트 데이터 생성');
-                
-                const testConfig = {
-                    eventTitle: '🎓 테스트 세미나 (모바일 수정됨)',
-                    eventDescription: '모바일에서 수정된 설명입니다',
-                    manualInstruction: '모바일에서 <strong>수동으로 설정된</strong> 안내문구입니다.'
-                };
-                
-                // 모든 가능한 키에 저장
-                localStorage.setItem('attendanceConfig', JSON.stringify(testConfig));
-                localStorage.setItem('eventConfig', JSON.stringify(testConfig));
-                localStorage.setItem('checkConfig', JSON.stringify(testConfig));
-                localStorage.setItem('eventTitle', testConfig.eventTitle);
-                localStorage.setItem('eventDescription', testConfig.eventDescription);
-                localStorage.setItem('manualInstruction', testConfig.manualInstruction);
-                
-                diagnosis.fixes.push('테스트 설정 데이터 생성');
-                console.log('✅ 테스트 데이터 생성 완료:', testConfig);
-            }
+            // 3. 실제 설정 데이터 확인 및 적용
+            let foundValidConfig = false;
             
-            // 4. 불일치 감지 및 강제 수정
             try {
-                // 여러 소스에서 설정 찾기
+                // 우선순위: attendanceConfig > eventConfig > checkConfig > 개별 키들
+                const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
                 let config = null;
                 let configSource = '';
                 
-                // 우선순위: attendanceConfig > eventConfig > checkConfig > 개별 키들
-                const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
-                
                 for (const key of configKeys) {
                     const configData = localStorage.getItem(key);
-                    if (configData) {
+                    console.log(`🔍 ${key} 확인:`, configData);
+                    
+                    if (configData && configData !== 'null' && configData !== 'undefined') {
                         try {
                             config = JSON.parse(configData);
                             configSource = key;
-                            console.log(`✅ 설정 발견: ${key}`, config);
-                            break;
+                            console.log(`✅ 유효한 설정 발견: ${key}`, config);
+                            
+                            // 유효한 데이터인지 확인
+                            if (config && typeof config === 'object' && 
+                                (config.eventTitle || config.eventDescription)) {
+                                foundValidConfig = true;
+                                break;
+                            } else {
+                                console.warn(`⚠️ ${key}는 유효하지 않은 데이터:`, config);
+                            }
                         } catch (e) {
                             console.warn(`⚠️ ${key} 파싱 실패:`, e);
                         }
                     }
                 }
                 
-                // 개별 키에서 설정 재구성
-                if (!config) {
+                // 개별 키에서 설정 찾기
+                if (!foundValidConfig) {
+                    console.log('🔄 개별 키에서 설정 찾는 중...');
                     const title = localStorage.getItem('eventTitle');
                     const desc = localStorage.getItem('eventDescription');
                     const manual = localStorage.getItem('manualInstruction');
                     
-                    if (title || desc) {
+                    console.log('개별 키 확인:');
+                    console.log('  eventTitle:', title);
+                    console.log('  eventDescription:', desc);
+                    console.log('  manualInstruction:', manual);
+                    
+                    if (title && title !== 'null' && title !== '🎓 세미나실 출석 체크') {
                         config = {
-                            eventTitle: title || '설정 없음',
-                            eventDescription: desc || '설정 없음',
+                            eventTitle: title,
+                            eventDescription: desc || '기본 설명',
                             manualInstruction: manual || '기본 안내문구'
                         };
                         configSource = 'individual_keys';
-                        diagnosis.fixes.push('개별 키에서 설정 재구성');
-                        console.log('🔧 개별 키에서 설정 재구성:', config);
+                        foundValidConfig = true;
+                        console.log('✅ 개별 키에서 유효한 설정 구성:', config);
                     }
                 }
                 
-                if (config) {
+                if (foundValidConfig && config) {
                     diagnosis.rawData.foundConfig = config;
                     diagnosis.rawData.configSource = configSource;
                     
                     const titleEl = document.getElementById('eventTitle');
                     const descEl = document.getElementById('eventDescription');
                     
-                    // 강제 업데이트 실행 (무조건)
-                    if (config.eventTitle && titleEl) {
-                        console.log(`🔧 제목 강제 업데이트: "${titleEl.textContent}" → "${config.eventTitle}"`);
+                    // 실제로 다른 내용인지 확인 후 업데이트
+                    let actuallyChanged = false;
+                    
+                    if (config.eventTitle && titleEl && titleEl.textContent !== config.eventTitle) {
+                        console.log(`🔧 제목 실제 변경: "${titleEl.textContent}" → "${config.eventTitle}"`);
                         forceUpdateElement(titleEl, config.eventTitle);
                         document.title = config.eventTitle;
-                        diagnosis.fixes.push(`제목 강제 수정: ${config.eventTitle}`);
+                        diagnosis.fixes.push(`제목: ${config.eventTitle}`);
+                        actuallyChanged = true;
                     }
                     
-                    if (config.eventDescription && descEl) {
-                        console.log(`🔧 설명 강제 업데이트: "${descEl.textContent}" → "${config.eventDescription}"`);
+                    if (config.eventDescription && descEl && descEl.textContent !== config.eventDescription) {
+                        console.log(`🔧 설명 실제 변경: "${descEl.textContent}" → "${config.eventDescription}"`);
                         forceUpdateElement(descEl, config.eventDescription);
-                        diagnosis.fixes.push(`설명 강제 수정: ${config.eventDescription}`);
+                        diagnosis.fixes.push(`설명: ${config.eventDescription}`);
+                        actuallyChanged = true;
                     }
                     
                     if (config.manualInstruction) {
                         ['manualInstructionText', 'blockedManualInstructionText'].forEach(id => {
                             const el = document.getElementById(id);
-                            if (el) {
-                                console.log(`🔧 ${id} 강제 업데이트`);
+                            if (el && el.innerHTML !== config.manualInstruction) {
+                                console.log(`🔧 ${id} 실제 변경`);
                                 forceUpdateElement(el, config.manualInstruction, 'innerHTML');
-                                diagnosis.fixes.push(`수동안내 강제 수정: ${id}`);
+                                diagnosis.fixes.push(`안내문구 수정`);
+                                actuallyChanged = true;
                             }
                         });
                     }
                     
-                    // 시각적 피드백 추가
-                    addVisualFeedback();
+                    if (actuallyChanged) {
+                        addVisualFeedback();
+                    } else {
+                        diagnosis.issues.push('설정이 이미 최신 상태입니다');
+                        console.log('ℹ️ 모든 설정이 이미 DOM과 일치함');
+                    }
                     
                 } else {
-                    diagnosis.issues.push('사용 가능한 설정 데이터를 찾을 수 없음');
-                    console.error('❌ 설정 데이터를 전혀 찾을 수 없음');
+                    diagnosis.issues.push('관리자가 설정한 데이터를 찾을 수 없습니다');
+                    console.error('❌ 유효한 설정 데이터를 전혀 찾을 수 없음');
+                    
+                    // 관리자 페이지에서 설정 저장이 제대로 안되었을 가능성
+                    diagnosis.issues.push('관리자 페이지에서 "모든 설정 저장"을 다시 시도해보세요');
                 }
                 
             } catch (e) {
@@ -825,16 +827,16 @@
             // 5. 진단 결과 표시
             showDiagnosisResult(diagnosis);
             
-            // 6. 알림으로도 결과 표시
+            // 6. 정확한 알림 표시
             const fixCount = diagnosis.fixes.length;
             const issueCount = diagnosis.issues.length;
             
             if (fixCount > 0) {
-                showQuickAlert(`✅ ${fixCount}개 항목이 수정되었습니다!`, 'success');
+                showQuickAlert(`✅ ${fixCount}개 항목이 실제로 수정되었습니다!`, 'success');
             } else if (issueCount > 0) {
-                showQuickAlert(`⚠️ ${issueCount}개 문제가 발견되었습니다`, 'warning');
+                showQuickAlert(`⚠️ 설정 데이터를 찾을 수 없습니다. 관리자 페이지에서 설정을 저장해주세요.`, 'warning');
             } else {
-                showQuickAlert('🔍 진단 완료 - 모든 것이 정상입니다', 'info');
+                showQuickAlert('ℹ️ 모든 설정이 이미 최신 상태입니다', 'info');
             }
             
             return diagnosis;
