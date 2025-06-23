@@ -338,6 +338,18 @@
         .modal-icon.error { color: #dc3545; }
         .modal-icon.warning { color: #ffc107; }
 
+        /* 모바일 디버그 정보 표시 */
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 15px;
+            font-size: 12px;
+            color: #6c757d;
+            font-family: monospace;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 30px 20px;
@@ -346,6 +358,10 @@
             
             .header h1 {
                 font-size: 24px;
+            }
+
+            .debug-info {
+                font-size: 10px;
             }
         }
     </style>
@@ -409,6 +425,15 @@
             <div class="fingerprint-info">
                 보안을 위해 기기 정보를 수집합니다 (중복 체크 방지용)
             </div>
+
+            <!-- 모바일 디버그 정보 -->
+            <div class="debug-info" id="debugInfo" style="display: none;">
+                <div><strong>설정 로드 상태:</strong></div>
+                <div id="debugDetails"></div>
+                <button type="button" onclick="toggleDebug()" style="margin-top: 5px; padding: 5px 10px; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 10px;">
+                    디버그 토글
+                </button>
+            </div>
         </div>
 
         <div id="blockedMessage" style="display: none;">
@@ -436,110 +461,250 @@
     </div>
 
     <script>
-        // 관리자 설정 불러오기 함수 (개선됨)
+        // 전역 디버그 함수
+        function toggleDebug() {
+            const debugInfo = document.getElementById('debugInfo');
+            if (debugInfo.style.display === 'none') {
+                debugInfo.style.display = 'block';
+                updateDebugInfo();
+            } else {
+                debugInfo.style.display = 'none';
+            }
+        }
+
+        function updateDebugInfo() {
+            const debugDetails = document.getElementById('debugDetails');
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            let debugText = '';
+            debugText += `모바일: ${isMobile ? 'Yes' : 'No'}<br>`;
+            debugText += `User Agent: ${navigator.userAgent.substring(0, 50)}...<br>`;
+            debugText += `localStorage 키 수: ${Object.keys(localStorage).length}<br>`;
+            
+            // 설정 관련 키 확인
+            const configKeys = [
+                'attendanceConfig',
+                'eventConfig', 
+                'checkConfig',
+                'eventTitle',
+                'eventDescription',
+                'manualInstruction',
+                'allowedLocations'
+            ];
+            
+            debugText += '<br><strong>설정 키 상태:</strong><br>';
+            configKeys.forEach(key => {
+                const exists = localStorage.getItem(key) !== null;
+                debugText += `${key}: ${exists ? '✅' : '❌'}<br>`;
+            });
+            
+            // 현재 DOM 상태
+            debugText += '<br><strong>현재 DOM 상태:</strong><br>';
+            debugText += `제목: "${document.getElementById('eventTitle').textContent}"<br>`;
+            debugText += `설명: "${document.getElementById('eventDescription').textContent}"<br>`;
+            
+            debugDetails.innerHTML = debugText;
+        }
+
+        // 개선된 관리자 설정 로드 함수 (강화된 모바일 지원)
         function loadAdminSettings() {
+            console.log('🔄 관리자 설정 로드 시작...');
+            console.log('📱 User Agent:', navigator.userAgent);
+            console.log('📱 Is Mobile:', /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+            
             try {
-                console.log('관리자 설정 로드 시작...');
-                
-                // 여러 키로 설정 확인
-                var config = localStorage.getItem('attendanceConfig') || 
-                           localStorage.getItem('eventConfig') || 
-                           localStorage.getItem('checkConfig');
-                
-                if (config) {
-                    var settings = JSON.parse(config);
-                    console.log('로드된 설정:', settings);
-                    
-                    // 제목 업데이트
-                    if (settings.eventTitle) {
-                        var titleEl = document.getElementById('eventTitle');
-                        if (titleEl) {
-                            titleEl.textContent = settings.eventTitle;
-                            document.title = settings.eventTitle; // 브라우저 탭 제목도 변경
-                            console.log('제목 업데이트:', settings.eventTitle);
-                        }
-                    }
-                    
-                    // 설명 업데이트
-                    if (settings.eventDescription) {
-                        var descEl = document.getElementById('eventDescription');
-                        if (descEl) {
-                            descEl.textContent = settings.eventDescription;
-                            console.log('설명 업데이트:', settings.eventDescription);
-                        }
-                    }
-                    
-                    // 수동 안내문구 업데이트
-                    if (settings.manualInstruction) {
-                        var manualEl = document.getElementById('manualInstructionText');
-                        var blockedManualEl = document.getElementById('blockedManualInstructionText');
-                        if (manualEl) {
-                            manualEl.innerHTML = settings.manualInstruction;
-                            console.log('수동 안내문구 업데이트:', settings.manualInstruction);
-                        }
-                        if (blockedManualEl) {
-                            blockedManualEl.innerHTML = settings.manualInstruction;
-                        }
-                    }
-                    
-                    // 허용 위치 업데이트 (CONFIG.ALLOWED_LOCATIONS에 반영)
-                    if (settings.allowedLocations && settings.allowedLocations.length > 0) {
-                        CONFIG.ALLOWED_LOCATIONS = settings.allowedLocations;
-                        console.log('허용 위치 업데이트:', CONFIG.ALLOWED_LOCATIONS);
-                    }
-                    
-                } else {
-                    // 개별 키로 설정 확인 (fallback)
-                    var eventTitle = localStorage.getItem('eventTitle');
-                    var eventDescription = localStorage.getItem('eventDescription');
-                    var manualInstruction = localStorage.getItem('manualInstruction');
-                    var allowedLocations = localStorage.getItem('allowedLocations');
-                    
-                    if (eventTitle) {
-                        var titleEl = document.getElementById('eventTitle');
-                        if (titleEl) {
-                            titleEl.textContent = eventTitle;
-                            document.title = eventTitle;
-                            console.log('개별 키로 제목 업데이트:', eventTitle);
-                        }
-                    }
-                    
-                    if (eventDescription) {
-                        var descEl = document.getElementById('eventDescription');
-                        if (descEl) {
-                            descEl.textContent = eventDescription;
-                            console.log('개별 키로 설명 업데이트:', eventDescription);
-                        }
-                    }
-                    
-                    if (manualInstruction) {
-                        var manualEl = document.getElementById('manualInstructionText');
-                        var blockedManualEl = document.getElementById('blockedManualInstructionText');
-                        if (manualEl) {
-                            manualEl.innerHTML = manualInstruction;
-                            console.log('개별 키로 수동 안내 업데이트:', manualInstruction);
-                        }
-                        if (blockedManualEl) {
-                            blockedManualEl.innerHTML = manualInstruction;
-                        }
-                    }
-                    
-                    if (allowedLocations) {
-                        try {
-                            CONFIG.ALLOWED_LOCATIONS = JSON.parse(allowedLocations);
-                            console.log('개별 키로 위치 업데이트:', CONFIG.ALLOWED_LOCATIONS);
-                        } catch (e) {
-                            console.warn('허용 위치 파싱 오류:', e);
-                        }
-                    }
-                    
-                    console.log('개별 키로 설정 로드 완료');
+                // localStorage 접근 가능성 체크
+                if (typeof(Storage) === "undefined") {
+                    console.error('❌ localStorage 지원되지 않음');
+                    return;
                 }
-                
-                console.log('관리자 설정 로드 완료');
+
+                // 모든 localStorage 키 로그
+                const allKeys = Object.keys(localStorage);
+                console.log('📦 localStorage 전체 키:', allKeys);
+
+                // 여러 키로 설정 확인 (우선순위 순)
+                const configPriority = [
+                    'attendanceConfig',
+                    'eventConfig', 
+                    'checkConfig'
+                ];
+
+                let loadedConfig = null;
+                let usedKey = null;
+
+                for (const key of configPriority) {
+                    const configData = localStorage.getItem(key);
+                    if (configData) {
+                        try {
+                            loadedConfig = JSON.parse(configData);
+                            usedKey = key;
+                            console.log(`✅ 설정 로드 성공 (키: ${key}):`, loadedConfig);
+                            break;
+                        } catch (e) {
+                            console.warn(`⚠️ ${key} 파싱 오류:`, e);
+                        }
+                    } else {
+                        console.log(`❌ ${key} 없음`);
+                    }
+                }
+
+                if (loadedConfig && usedKey) {
+                    console.log(`🎯 사용된 설정 키: ${usedKey}`);
+                    applyLoadedConfig(loadedConfig);
+                } else {
+                    console.log('🔄 통합 설정 없음, 개별 키 확인...');
+                    loadIndividualSettings();
+                }
+
+                // 모바일에서 강제 새로고침 트리거
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    setTimeout(() => {
+                        console.log('📱 모바일: 지연된 설정 재적용');
+                        forceReapplySettings();
+                    }, 100);
+                }
+
+                console.log('✅ 관리자 설정 로드 완료');
                 
             } catch (e) {
-                console.error('설정 로드 오류:', e);
+                console.error('❌ 설정 로드 오류:', e);
+                // 오류 시 기본값 사용
+                console.log('🔄 기본값으로 fallback');
+            }
+        }
+
+        function applyLoadedConfig(settings) {
+            console.log('🎨 설정 적용 시작:', settings);
+            
+            // 제목 업데이트
+            if (settings.eventTitle) {
+                updateElement('eventTitle', settings.eventTitle, 'textContent');
+                document.title = settings.eventTitle; // 브라우저 탭 제목도 변경
+                console.log('📝 제목 업데이트:', settings.eventTitle);
+            }
+            
+            // 설명 업데이트
+            if (settings.eventDescription) {
+                updateElement('eventDescription', settings.eventDescription, 'textContent');
+                console.log('📄 설명 업데이트:', settings.eventDescription);
+            }
+            
+            // 수동 안내문구 업데이트
+            if (settings.manualInstruction) {
+                updateElement('manualInstructionText', settings.manualInstruction, 'innerHTML');
+                updateElement('blockedManualInstructionText', settings.manualInstruction, 'innerHTML');
+                console.log('📋 수동 안내문구 업데이트:', settings.manualInstruction);
+            }
+            
+            // 허용 위치 업데이트
+            if (settings.allowedLocations && settings.allowedLocations.length > 0) {
+                if (window.CONFIG) {
+                    window.CONFIG.ALLOWED_LOCATIONS = settings.allowedLocations;
+                    console.log('📍 허용 위치 업데이트:', window.CONFIG.ALLOWED_LOCATIONS);
+                } else {
+                    // CONFIG 객체가 아직 없으면 나중에 설정
+                    window.pendingAllowedLocations = settings.allowedLocations;
+                    console.log('📍 허용 위치 대기 중:', settings.allowedLocations);
+                }
+            }
+        }
+
+        function updateElement(id, content, method = 'textContent') {
+            const element = document.getElementById(id);
+            if (element) {
+                const oldContent = element[method];
+                element[method] = content;
+                console.log(`🔄 ${id} 업데이트: "${oldContent}" → "${content}"`);
+                
+                // 모바일에서 강제 리플로우 트리거
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    element.style.display = 'none';
+                    element.offsetHeight; // 강제 리플로우
+                    element.style.display = '';
+                }
+                
+                return true;
+            } else {
+                console.warn(`⚠️ 요소 "${id}" 찾을 수 없음`);
+                return false;
+            }
+        }
+
+        function loadIndividualSettings() {
+            console.log('🔄 개별 설정 키 로드 시작...');
+            
+            const individualSettings = [
+                { key: 'eventTitle', elementId: 'eventTitle', method: 'textContent' },
+                { key: 'eventDescription', elementId: 'eventDescription', method: 'textContent' },
+                { key: 'manualInstruction', elementId: 'manualInstructionText', method: 'innerHTML' },
+                { key: 'manualInstruction', elementId: 'blockedManualInstructionText', method: 'innerHTML' }
+            ];
+
+            individualSettings.forEach(({ key, elementId, method }) => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    updateElement(elementId, value, method);
+                    console.log(`✅ 개별 설정 적용: ${key} → ${elementId}`);
+                } else {
+                    console.log(`❌ 개별 설정 없음: ${key}`);
+                }
+            });
+
+            // 허용 위치 개별 로드
+            const allowedLocations = localStorage.getItem('allowedLocations');
+            if (allowedLocations) {
+                try {
+                    const locations = JSON.parse(allowedLocations);
+                    if (window.CONFIG) {
+                        window.CONFIG.ALLOWED_LOCATIONS = locations;
+                    } else {
+                        window.pendingAllowedLocations = locations;
+                    }
+                    console.log('✅ 개별 허용 위치 적용:', locations);
+                } catch (e) {
+                    console.warn('⚠️ 허용 위치 파싱 오류:', e);
+                }
+            }
+        }
+
+        function forceReapplySettings() {
+            console.log('💪 강제 설정 재적용 시작...');
+            
+            // DOM에서 현재 값 확인
+            const currentTitle = document.getElementById('eventTitle').textContent;
+            const currentDesc = document.getElementById('eventDescription').textContent;
+            
+            console.log('📊 현재 DOM 상태:');
+            console.log('  제목:', currentTitle);
+            console.log('  설명:', currentDesc);
+            
+            // localStorage에서 다시 확인하여 적용
+            const configKeys = ['attendanceConfig', 'eventConfig', 'checkConfig'];
+            
+            for (const key of configKeys) {
+                const configData = localStorage.getItem(key);
+                if (configData) {
+                    try {
+                        const config = JSON.parse(configData);
+                        console.log(`🔁 ${key}에서 재적용:`, config);
+                        
+                        if (config.eventTitle && config.eventTitle !== currentTitle) {
+                            document.getElementById('eventTitle').textContent = config.eventTitle;
+                            document.title = config.eventTitle;
+                            console.log('🔥 제목 강제 업데이트:', config.eventTitle);
+                        }
+                        
+                        if (config.eventDescription && config.eventDescription !== currentDesc) {
+                            document.getElementById('eventDescription').textContent = config.eventDescription;
+                            console.log('🔥 설명 강제 업데이트:', config.eventDescription);
+                        }
+                        
+                        break; // 첫 번째 유효한 설정만 사용
+                    } catch (e) {
+                        console.warn(`⚠️ ${key} 재파싱 오류:`, e);
+                    }
+                }
             }
         }
 
@@ -555,7 +720,7 @@
             GPS_TIMEOUT: 15000, // 15초
             GPS_MAX_AGE: 300000, // 5분
             
-            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음) - 벽소홀로 수정
+            // 허용된 위치 (관리자 설정으로 덮어써질 수 있음)
             ALLOWED_LOCATIONS: [
                 {
                     name: "단호홀",
@@ -643,6 +808,13 @@
             }
 
             init() {
+                // 대기 중인 허용 위치가 있으면 적용
+                if (window.pendingAllowedLocations) {
+                    CONFIG.ALLOWED_LOCATIONS = window.pendingAllowedLocations;
+                    delete window.pendingAllowedLocations;
+                    console.log('📍 대기 중이던 허용 위치 적용:', CONFIG.ALLOWED_LOCATIONS);
+                }
+
                 this.updateTimestamp();
                 this.displayDeviceInfo();
                 
@@ -654,6 +826,12 @@
                 this.detectAutocomplete();
                 
                 setInterval(() => this.updateTimestamp(), 1000);
+
+                // 모바일에서 추가 디버그 정보 표시
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    document.getElementById('debugInfo').style.display = 'block';
+                    updateDebugInfo();
+                }
             }
 
             checkIfBlocked() {
@@ -695,6 +873,25 @@
                 document.addEventListener('visibilitychange', () => {
                     if (!document.hidden) {
                         this.updateTimestamp();
+                        // 모바일에서 페이지 재활성화 시 설정 재확인
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                            setTimeout(() => {
+                                console.log('📱 페이지 재활성화: 설정 재확인');
+                                forceReapplySettings();
+                                updateDebugInfo();
+                            }, 100);
+                        }
+                    }
+                });
+
+                // 모바일에서 새로고침 감지
+                window.addEventListener('pageshow', (event) => {
+                    if (event.persisted) {
+                        console.log('📱 백/포워드 캐시에서 복원됨: 설정 재적용');
+                        setTimeout(() => {
+                            loadAdminSettings();
+                            updateDebugInfo();
+                        }, 50);
                     }
                 });
             }
@@ -1046,29 +1243,24 @@
             }
 
             async submitToAppsScript(data) {
-                // 방법 1: no-cors 모드로 시도 (응답 확인 불가하지만 전송됨)
                 try {
                     console.log('Apps Script URL:', CONFIG.GOOGLE_SCRIPT_URL);
                     console.log('제출 데이터:', data);
 
                     const response = await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // CORS 우회
+                        mode: 'no-cors',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify(data)
                     });
 
-                    // no-cors 모드에서는 응답 내용을 확인할 수 없음
-                    // 하지만 요청은 서버에 전달됨
-                    console.log('no-cors 모드로 전송 완료 (응답 확인 불가)');
+                    console.log('no-cors 모드로 전송 완료');
                     return { success: true, message: 'no-cors 모드로 전송됨', mode: 'no-cors' };
 
                 } catch (noCorsError) {
                     console.warn('no-cors 모드 실패, JSONP 방식으로 재시도:', noCorsError);
-                    
-                    // 방법 2: JSONP 방식으로 재시도
                     return await this.submitViaJSONP(data);
                 }
             }
@@ -1079,14 +1271,12 @@
                     
                     console.log('JSONP 요청 시작:', callbackName);
                     
-                    // 전역 콜백 함수 등록
                     window[callbackName] = function(response) {
                         console.log('JSONP 콜백 실행됨:', response);
                         cleanup();
                         resolve(response);
                     };
 
-                    // 에러 처리를 위한 타임아웃
                     const timeoutId = setTimeout(() => {
                         console.warn('JSONP 타임아웃 발생');
                         cleanup();
@@ -1105,7 +1295,6 @@
                         }
                     };
 
-                    // URL 파라미터 생성
                     const params = new URLSearchParams();
                     params.append('callback', callbackName);
                     params.append('data', JSON.stringify(data));
@@ -1113,7 +1302,6 @@
                     const fullUrl = `${CONFIG.GOOGLE_SCRIPT_URL}?${params.toString()}`;
                     console.log('JSONP 요청 URL:', fullUrl);
 
-                    // 스크립트 태그 생성
                     const script = document.createElement('script');
                     script.src = fullUrl;
                     script.onload = function() {
@@ -1125,7 +1313,6 @@
                         reject(new Error('JSONP 스크립트 로드 실패'));
                     };
 
-                    // DOM에 스크립트 추가
                     console.log('JSONP 스크립트 DOM에 추가');
                     document.head.appendChild(script);
                 });
@@ -1212,18 +1399,72 @@
             }
         }
 
-        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화
+        // 설정 동기화 검사 함수 (모바일 전용)
+        function periodicSettingsCheck() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                setInterval(() => {
+                    const currentTitle = document.getElementById('eventTitle').textContent;
+                    const configData = localStorage.getItem('attendanceConfig');
+                    
+                    if (configData) {
+                        try {
+                            const config = JSON.parse(configData);
+                            if (config.eventTitle && config.eventTitle !== currentTitle && currentTitle === '🎓 세미나실 출석 체크') {
+                                console.log('📱 주기적 검사: 설정 불일치 발견, 재적용');
+                                loadAdminSettings();
+                                updateDebugInfo();
+                            }
+                        } catch (e) {
+                            console.warn('⚠️ 주기적 설정 검사 오류:', e);
+                        }
+                    }
+                }, 5000); // 5초마다 검사
+            }
+        }
+
+        // Storage 이벤트 리스너 (다른 탭에서 설정 변경 감지)
+        window.addEventListener('storage', function(e) {
+            console.log('📡 Storage 이벤트 감지:', e.key, e.newValue);
+            
+            if (e.key === 'attendanceConfig' || e.key === 'eventTitle' || e.key === 'eventDescription') {
+                console.log('📱 설정 변경 감지: 즉시 재적용');
+                setTimeout(() => {
+                    loadAdminSettings();
+                    updateDebugInfo();
+                }, 100);
+            }
+        });
+
+        // 페이지 로드 완료 시 관리자 설정 로드 및 시스템 초기화 (강화된 버전)
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 DOMContentLoaded 이벤트 시작');
+            
             try {
-                // 관리자 설정을 먼저 로드
+                // 1. 관리자 설정을 먼저 로드
                 loadAdminSettings();
                 
-                // 그 다음 출석 시스템 초기화
-                new AttendanceSystem();
+                // 2. 짧은 지연 후 출석 시스템 초기화
+                setTimeout(() => {
+                    new AttendanceSystem();
+                    console.log('✅ 출석 시스템 초기화 완료');
+                }, 100);
                 
-                console.log('페이지 로드 완료 - 관리자 설정 및 출석 시스템 초기화됨');
+                // 3. 모바일에서 추가 지연 후 재확인
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    setTimeout(() => {
+                        console.log('📱 모바일: 추가 설정 재확인');
+                        forceReapplySettings();
+                        updateDebugInfo();
+                    }, 500);
+                    
+                    // 4. 주기적 설정 검사 시작
+                    periodicSettingsCheck();
+                }
+                
+                console.log('✅ 페이지 로드 완료 - 관리자 설정 및 출석 시스템 초기화됨');
+                
             } catch (error) {
-                console.error('시스템 초기화 오류:', error);
+                console.error('❌ 시스템 초기화 오류:', error);
                 alert('시스템 초기화 중 오류가 발생했습니다. 페이지를 새로고침해주세요.');
             }
         });
